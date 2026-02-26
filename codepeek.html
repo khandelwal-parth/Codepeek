@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodePeek — Inspect Any Website</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #08090f;
+    --surface: #0f1018;
+    --border: #1e1e2e;
+    --cyan: #00ffe5;
+    --pink: #ff3cac;
+    --text: #e8e8f0;
+    --muted: #5a5a72;
+    --code-bg: #0b0b14;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,229,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,229,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+  .orb {
+    position: fixed; width: 700px; height: 700px;
+    border-radius: 50%; filter: blur(130px); opacity: 0.09;
+    pointer-events: none; z-index: 0;
+    animation: drift 9s ease-in-out infinite alternate;
+  }
+  .orb.a { background: var(--cyan); top: -250px; left: -150px; }
+  .orb.b { background: var(--pink); bottom: -250px; right: -150px; animation-delay: -4.5s; }
+  @keyframes drift { from{transform:translate(0,0)} to{transform:translate(50px,35px)} }
+
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: 980px; margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 52px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,255,229,0.06); border: 1px solid rgba(0,255,229,0.15);
+    border-radius: 100px; padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--cyan);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: blink 2s infinite; }
+  h1 {
+    font-size: clamp(64px, 11vw, 120px);
+    font-weight: 800; line-height: 0.9;
+    letter-spacing: -4px; margin-bottom: 20px;
+  }
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--cyan) 0%, #00b4d8 40%, var(--pink) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .sub {
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.8; max-width: 480px; margin: 0 auto;
+  }
+
+  /* ── Input Card ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px;
+    position: relative; overflow: hidden; margin-bottom: 24px;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: 0.35;
+  }
+
+  .input-wrap {
+    display: flex; gap: 10px; align-items: stretch;
+  }
+
+  input[type=text] {
+    flex: 1;
+    background: var(--code-bg); border: 1px solid var(--border);
+    color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; padding: 15px 20px; border-radius: 12px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type=text]::placeholder { color: var(--muted); }
+  input[type=text]:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,255,229,0.07); }
+
+  /* image upload btn */
+  .img-btn {
+    width: 52px; height: 52px; flex-shrink: 0;
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; color: var(--muted); position: relative;
+  }
+  .img-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .img-btn.has-image { border-color: var(--cyan); color: var(--cyan); background: rgba(0,255,229,0.06); }
+  .img-btn svg { width: 20px; height: 20px; }
+  .img-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
+  /* analyze btn */
+  .go {
+    background: linear-gradient(135deg, var(--cyan), #00b4d8);
+    color: #000; font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 800;
+    padding: 0 28px; border: none; border-radius: 12px;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+    white-space: nowrap; letter-spacing: 0.5px;
+  }
+  .go:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(0,255,229,0.3); }
+  .go:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .note {
+    background: rgba(0,255,229,0.04); border: 1px solid rgba(0,255,229,0.1);
+    border-radius: 10px; padding: 11px 16px;
+    font-size: 12px; color: rgba(0,255,229,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 14px; line-height: 1.7;
+  }
+
+  /* image preview strip */
+  .img-preview {
+    display: none; margin-top: 14px;
+    background: var(--code-bg); border: 1px solid rgba(0,255,229,0.2);
+    border-radius: 10px; padding: 10px 14px;
+    display: none; align-items: center; gap: 12px;
+  }
+  .img-preview.show { display: flex; }
+  .img-preview img { height: 48px; width: 80px; object-fit: cover; border-radius: 6px; }
+  .img-preview-info { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); }
+  .img-preview-info span { color: var(--muted); font-size: 11px; display: block; margin-top: 2px; }
+  .img-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; transition: color 0.15s; }
+  .img-clear:hover { color: var(--pink); }
+
+  /* ── Stats ── */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 20px;
+  }
+  @media(max-width:600px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+  .stat-box {
+    background: rgba(0,255,229,0.04); border: 1px solid rgba(0,255,229,0.1);
+    border-radius: 12px; padding: 18px; text-align: center;
+    animation: fadeUp 0.4s ease both;
+  }
+  .stat-box:nth-child(2){animation-delay:.05s} .stat-box:nth-child(3){animation-delay:.1s} .stat-box:nth-child(4){animation-delay:.15s}
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-value { font-size: 30px; font-weight: 800; color: var(--cyan); margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── Output Card ── */
+  .output-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+  .output-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; background: rgba(0,0,0,0.35);
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;
+  }
+  .output-meta { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .dot.live { background: var(--cyan); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  .output-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+
+  .btn-row { display: flex; gap: 8px; }
+  .action-btn {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text); cursor: pointer; transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  .tabs-bar {
+    padding: 0 22px; background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 0;
+  }
+  .vtab {
+    background: transparent; border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    padding: 11px 18px; cursor: pointer; transition: all 0.15s; margin-bottom: -1px;
+  }
+  .vtab:hover { color: var(--cyan); }
+  .vtab.on { border-bottom-color: var(--cyan); color: var(--cyan); }
+
+  .code-view {
+    padding: 22px 26px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    line-height: 1.85; color: #9ab4c8;
+    white-space: pre-wrap; word-break: break-all;
+    max-height: 580px; overflow-y: auto;
+    counter-reset: line;
+  }
+  .code-view::-webkit-scrollbar { width: 5px; }
+  .code-view::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .code-line { display: flex; gap: 0; }
+  .ln { color: #2a2a40; display: inline-block; width: 44px; text-align: right; margin-right: 22px; user-select: none; font-size: 11px; flex-shrink: 0; padding-top: 1px; }
+
+  /* ── States ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 300px;
+    gap: 12px; color: var(--muted); text-align: center;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.2; margin-bottom: 4px; }
+
+  .loader-wrap {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 240px; gap: 16px;
+    color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+  .spinner {
+    width: 22px; height: 22px; flex-shrink: 0;
+    border: 2px solid rgba(0,255,229,0.15); border-top-color: var(--cyan);
+    border-radius: 50%; animation: spin 0.65s linear infinite;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .error-wrap {
+    background: rgba(255,60,172,0.07); border: 1px solid rgba(255,60,172,0.22);
+    border-radius: 14px; padding: 22px 26px;
+    color: rgba(255,60,172,0.85); font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; line-height: 2;
+  }
+
+  /* syntax colors */
+  .kw{color:#00ffe5} .val{color:#ff3cac} .str{color:#00d084} .cmt{color:#3a3a55} .tag{color:#f7c948} .attr{color:#7ec8e3}
+</style>
+</head>
+<body>
+<div class="orb a"></div>
+<div class="orb b"></div>
+
+<div class="wrap">
+  <header>
+    <div class="badge"><span class="badge-dot"></span> Code Inspector</div>
+    <h1>Code<em>Peek</em></h1>
+    <p class="sub">Paste a URL, drop some code, or upload a screenshot — get the source instantly.</p>
+  </header>
+
+  <!-- Input -->
+  <div class="card">
+    <div class="input-wrap">
+      <input type="text" id="mainInput" placeholder="Paste a URL or code..." autocomplete="off" spellcheck="false" />
+
+      <label class="img-btn" id="imgBtn" title="Upload screenshot for AI analysis">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <circle cx="8.5" cy="10.5" r="1.5"/>
+          <path d="M21 15l-5-5L5 19"/>
+        </svg>
+        <input type="file" id="imgInput" accept="image/*" style="display:none" />
+      </label>
+
+      <button class="go" id="goBtn" onclick="analyze()">Analyze →</button>
+    </div>
+
+    <!-- image preview -->
+    <div class="img-preview" id="imgPreview">
+      <img id="imgThumb" src="" alt="preview" />
+      <div class="img-preview-info">
+        <span id="imgName">image.png</span>
+        <span>Ready for AI analysis · Gemini Vision</span>
+      </div>
+      <button class="img-clear" onclick="clearImage()" title="Remove image">✕</button>
+    </div>
+
+    <div class="note" id="mainNote">⚡ Auto-detects URLs, raw files, pasted code, or screenshots — no mode switching needed.</div>
+  </div>
+
+  <!-- Stats -->
+  <div id="statsGrid" class="stats-grid" style="display:none"></div>
+
+  <!-- Output -->
+  <div id="outputCard" style="display:none" class="output-card">
+    <div class="output-topbar">
+      <div class="output-meta">
+        <div class="dot live"></div>
+        <span class="output-label" id="outputLabel">OUTPUT</span>
+      </div>
+      <div class="btn-row">
+        <button class="action-btn" onclick="downloadCode()">↓ Download</button>
+        <button class="action-btn" id="copyBtn" onclick="copyCode()">Copy Code</button>
+      </div>
+    </div>
+    <div class="tabs-bar" id="tabsBar"></div>
+    <div class="code-view" id="codeView"></div>
+  </div>
+
+  <!-- Status / error -->
+  <div id="statusArea"></div>
+
+  <!-- Empty default -->
+  <div class="output-card" id="emptyCard">
+    <div class="empty-state">
+      <div class="empty-icon">&lt;/&gt;</div>
+      <p style="font-size:15px">Nothing loaded yet</p>
+      <span style="font-size:12px;opacity:0.5">Paste a URL, drop code, or upload a screenshot above</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG — replace with your Gemini API key
+// ─────────────────────────────────────────────
+const GEMINI_API_KEY = "AIzaSyDn66Os7qR3EbUKPwG-SMYPcjiQqUjHbEY";
+
+// ─────────────────────────────────────────────
+let rawCode = '';
+let currentView = 'full';
+let uploadedImage = null; // { base64, mimeType, name }
+
+// Image upload
+document.getElementById('imgInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const base64 = dataUrl.split(',')[1];
+    uploadedImage = { base64, mimeType: file.type, name: file.name, dataUrl };
+    document.getElementById('imgThumb').src = dataUrl;
+    document.getElementById('imgName').textContent = file.name;
+    document.getElementById('imgPreview').classList.add('show');
+    document.getElementById('imgBtn').classList.add('has-image');
+    document.getElementById('mainInput').placeholder = 'Image loaded — click Analyze to detect UI';
+  };
+  reader.readAsDataURL(file);
+});
+
+function clearImage() {
+  uploadedImage = null;
+  document.getElementById('imgInput').value = '';
+  document.getElementById('imgPreview').classList.remove('show');
+  document.getElementById('imgBtn').classList.remove('has-image');
+  document.getElementById('mainInput').placeholder = 'Paste a URL or code...';
+}
+
+// ─── Main entry ───────────────────────────────
+async function analyze() {
+  const input = document.getElementById('mainInput').value.trim();
+
+  // Priority: image first, then input
+  if (uploadedImage) {
+    await analyzeImage();
+  } else if (!input) {
+    shakeInput();
+  } else if (input.startsWith('http')) {
+    if (input.includes('raw.githubusercontent.com') || input.includes('gist.githubusercontent.com') || input.includes('pastebin.com/raw')) {
+      await fetchRaw(input);
+    } else {
+      await fetchWithProxies(input);
+    }
+  } else {
+    // Pasted code
+    showOutput(input, 'PASTED CODE');
+  }
+}
+
+// ─── Fetch via CORS proxies ───────────────────
+async function fetchWithProxies(url) {
+  showLoading('Fetching source code...');
+  setGoDisabled(true);
+
+  const proxies = [
+    { name: 'allorigins', fn: async () => {
+      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      const d = await r.json();
+      if (!d.contents || d.contents.length < 50) throw new Error('Empty');
+      return d.contents;
+    }},
+    { name: 'corsproxy.io', fn: async () => {
+      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text(); if (t.length < 50) throw new Error('Empty'); return t;
+    }},
+    { name: 'codetabs', fn: async () => {
+      const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text(); if (t.length < 50) throw new Error('Empty'); return t;
+    }},
+    { name: 'thingproxy', fn: async () => {
+      const r = await fetch(`https://thingproxy.freeboard.io/fetch/${url}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text(); if (t.length < 50) throw new Error('Empty'); return t;
+    }},
+  ];
+
+  let html = null;
+  const log = [];
+  for (const p of proxies) {
+    try {
+      html = await Promise.race([p.fn(), timeout(8000)]);
+      log.push('✓ ' + p.name);
+      break;
+    } catch(e) { log.push('✗ ' + p.name + ': ' + e.message); }
+  }
+
+  setGoDisabled(false);
+
+  if (!html) {
+    showError('All proxies failed — site is blocking external requests',
+      `This is common with Vercel / Next.js / Cloudflare-protected apps.<br><br>
+      <strong>Fix:</strong> Open the site in your browser → press <kbd style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px">Ctrl+U</kbd> → copy all → paste it in the input above<br><br>
+      <span style="opacity:0.35">${log.join('<br>')}</span>`
+    );
+    return;
+  }
+
+  const host = (() => { try { return new URL(url).hostname.toUpperCase(); } catch(e) { return 'RESULT'; }})();
+  showOutput(html, host);
+}
+
+// ─── Fetch raw file directly ──────────────────
+async function fetchRaw(url) {
+  showLoading('Fetching file...');
+  setGoDisabled(true);
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const code = await r.text();
+    showOutput(code, url.split('/').pop().toUpperCase() || 'FILE');
+  } catch(e) {
+    showError('Could not fetch file', e.message);
+  } finally { setGoDisabled(false); }
+}
+
+// ─── Gemini image analysis ────────────────────
+async function analyzeImage() {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_KEY_HERE') {
+    showError('API key not set', 'Open codepeek.html in VS Code and replace <code>YOUR_KEY_HERE</code> with your Gemini API key.');
+    return;
+  }
+
+  showLoading('Analyzing image with Gemini Vision AI...');
+  setGoDisabled(true);
+
+  const prompt = `You are a UI-to-code expert. Carefully analyze this screenshot or UI image.
+Identify every visible element: layout structure, sections, navigation, buttons, inputs, cards, colors, fonts, spacing, icons, and any text content.
+Then generate clean, complete, production-ready HTML + CSS + JavaScript that recreates this UI as accurately as possible.
+Use modern CSS (flexbox/grid), match the color scheme, typography, and layout precisely.
+Return ONLY the complete HTML code starting with <!DOCTYPE html>. No explanation, no markdown, no backticks.`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: uploadedImage.mimeType, data: uploadedImage.base64 } }
+            ]
+          }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'HTTP ' + res.status);
+    }
+
+    const data = await res.json();
+    let code = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Strip markdown fences if present
+    code = code.replace(/^```[\w]*\n?/m, '').replace(/```$/m, '').trim();
+
+    if (!code) throw new Error('Gemini returned empty response');
+
+    showOutput(code, '🤖 AI GENERATED — ' + uploadedImage.name.toUpperCase());
+    clearImage();
+
+  } catch(e) {
+    showError('Gemini API error: ' + e.message,
+      'Make sure your API key is valid and you have access to gemini-3-flash-preview.');
+  } finally { setGoDisabled(false); }
+}
+// ─── Render output ────────────────────────────
+function showOutput(code, label) {
+  rawCode = code;
+  currentView = 'full';
+
+  document.getElementById('emptyCard').style.display = 'none';
+  document.getElementById('statusArea').innerHTML = '';
+  document.getElementById('outputCard').style.display = 'block';
+  document.getElementById('outputLabel').textContent = label;
+
+  const isHTML = code.trim().startsWith('<');
+  buildTabs(isHTML
+    ? [{id:'full',label:'Full HTML'},{id:'head',label:'Head'},{id:'body',label:'Body'}]
+    : [{id:'full',label:'Source'}]
+  );
+  renderCode();
+  renderStats(code);
+}
+
+function buildTabs(views) {
+  document.getElementById('tabsBar').innerHTML = views.map(v =>
+    `<button class="vtab ${v.id===currentView?'on':''}" onclick="switchView('${v.id}')">${v.label}</button>`
+  ).join('');
+}
+
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll('.vtab').forEach(t =>
+    t.classList.toggle('on', t.getAttribute('onclick') === `switchView('${v}')`)
+  );
+  renderCode();
+}
+
+function extractHead(h) { const m=h.match(/<head[\s\S]*?<\/head>/i); return m?m[0]:'<!-- No <head> found -->'; }
+function extractBody(h) { const m=h.match(/<body[\s\S]*?<\/body>/i); return m?m[0]:'<!-- No <body> found -->'; }
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function highlight(line) {
+  return esc(line)
+    .replace(/(&lt;\/?)([\w:-]+)/g, '<span class="tag">$1$2</span>')
+    .replace(/\b(function|const|let|var|return|if|else|for|while|class|import|export|async|await|def|from|new)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(true|false|null|undefined|this)\b/g, '<span class="val">$1</span>')
+    .replace(/(&#39;[^&#]*&#39;|&quot;[^&]*&quot;)/g, '<span class="str">$1</span>')
+    .replace(/(\/\/.*$)/gm, '<span class="cmt">$1</span>');
+}
+
+function renderCode() {
+  let code = rawCode;
+  if (currentView === 'head') code = extractHead(rawCode);
+  else if (currentView === 'body') code = extractBody(rawCode);
+
+  const lines = code.split('\n');
+  document.getElementById('codeView').innerHTML = lines.map((line, i) =>
+    `<div class="code-line"><span class="ln">${i+1}</span><span>${highlight(line) || '&nbsp;'}</span></div>`
+  ).join('');
+}
+
+function renderStats(code) {
+  const lines = code.split('\n').length;
+  const chars = code.length;
+  const size = (new Blob([code]).size / 1024).toFixed(1);
+  const fns = (code.match(/function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\(|def\s+\w+/g)||[]).length;
+  const el = document.getElementById('statsGrid');
+  el.style.display = 'grid';
+  el.innerHTML = `
+    <div class="stat-box"><div class="stat-label">Lines</div><div class="stat-value">${lines.toLocaleString()}</div></div>
+    <div class="stat-box"><div class="stat-label">Characters</div><div class="stat-value">${chars.toLocaleString()}</div></div>
+    <div class="stat-box"><div class="stat-label">Size</div><div class="stat-value">${size}kb</div></div>
+    <div class="stat-box"><div class="stat-label">Functions</div><div class="stat-value">${fns}</div></div>
+  `;
+}
+
+// ─── Copy & Download ──────────────────────────
+function copyCode() {
+  let code = rawCode;
+  if (currentView === 'head') code = extractHead(rawCode);
+  else if (currentView === 'body') code = extractBody(rawCode);
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy Code', 1600);
+  });
+}
+
+function downloadCode() {
+  let code = rawCode;
+  if (currentView === 'head') code = extractHead(rawCode);
+  else if (currentView === 'body') code = extractBody(rawCode);
+  const blob = new Blob([code], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'codepeek-output.html';
+  a.click();
+}
+
+// ─── UI helpers ───────────────────────────────
+function showLoading(msg) {
+  document.getElementById('emptyCard').style.display = 'none';
+  document.getElementById('outputCard').style.display = 'none';
+  document.getElementById('statsGrid').style.display = 'none';
+  document.getElementById('statusArea').innerHTML = `
+    <div class="output-card">
+      <div class="loader-wrap"><div class="spinner"></div>${msg}</div>
+    </div>`;
+}
+
+function showError(title, detail) {
+  document.getElementById('emptyCard').style.display = 'none';
+  document.getElementById('outputCard').style.display = 'none';
+  document.getElementById('statsGrid').style.display = 'none';
+  document.getElementById('statusArea').innerHTML = `
+    <div class="error-wrap">
+      <strong>⚠ ${title}</strong><br><br>${detail}
+    </div>`;
+}
+
+function setGoDisabled(v) { document.getElementById('goBtn').disabled = v; }
+function timeout(ms) { return new Promise((_,r) => setTimeout(() => r(new Error('Timeout')), ms)); }
+function shakeInput() {
+  const el = document.getElementById('mainInput');
+  el.style.borderColor = 'var(--pink)';
+  el.style.boxShadow = '0 0 0 3px rgba(255,60,172,0.15)';
+  el.focus();
+  setTimeout(() => { el.style.borderColor=''; el.style.boxShadow=''; }, 1000);
+}
+
+// Enter key
+document.getElementById('mainInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') analyze();
+});
+</script>
+</body>
+</html>
