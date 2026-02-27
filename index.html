@@ -15,6 +15,7 @@
       --text: #e8eaf0;
       --muted: #555878;
       --success: #00ff88;
+      --purple: #a78bfa;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,7 +28,6 @@
       overflow-x: hidden;
     }
 
-    /* ── Grid background ── */
     body::before {
       content: '';
       position: fixed;
@@ -40,7 +40,6 @@
       z-index: 0;
     }
 
-    /* ── Orbs ── */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -51,13 +50,12 @@
     .orb-cyan { width: 400px; height: 400px; background: rgba(0,229,255,0.08); top: -100px; left: -100px; }
     .orb-pink { width: 350px; height: 350px; background: rgba(255,45,155,0.08); bottom: -80px; right: -80px; }
 
-    /* ── Main layout ── */
     .app { position: relative; z-index: 1; }
 
     /* ── Hero ── */
     .hero {
       text-align: center;
-      padding: 60px 20px 40px;
+      padding: 50px 20px 32px;
     }
 
     .badge {
@@ -68,15 +66,15 @@
       font-size: 0.7rem;
       letter-spacing: 0.15em;
       color: var(--muted);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       font-family: 'JetBrains Mono', monospace;
     }
 
     .logo {
-      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-size: clamp(2.8rem, 7vw, 5rem);
       font-weight: 800;
       line-height: 1;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .logo span {
@@ -88,9 +86,9 @@
 
     .subtitle {
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       max-width: 500px;
-      margin: 0 auto 40px;
+      margin: 0 auto 32px;
       line-height: 1.6;
     }
 
@@ -105,7 +103,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 20px;
+      padding: 18px 20px;
     }
 
     .input-row {
@@ -121,8 +119,8 @@
       outline: none;
       color: var(--text);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
-      padding: 10px 0;
+      font-size: 0.88rem;
+      padding: 8px 0;
     }
 
     .main-input::placeholder { color: var(--muted); }
@@ -133,10 +131,9 @@
       border-radius: 10px;
       color: var(--muted);
       cursor: pointer;
-      padding: 10px 12px;
-      font-size: 1.1rem;
+      padding: 9px 12px;
+      font-size: 1rem;
       transition: all 0.2s;
-      position: relative;
     }
 
     .img-btn:hover { border-color: var(--cyan); color: var(--cyan); }
@@ -149,8 +146,8 @@
       color: #000;
       font-family: 'Syne', sans-serif;
       font-weight: 700;
-      font-size: 0.9rem;
-      padding: 10px 22px;
+      font-size: 0.88rem;
+      padding: 9px 20px;
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
@@ -171,117 +168,78 @@
     .image-preview.visible { display: flex; }
 
     .img-thumb {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 8px;
       object-fit: cover;
       border: 1px solid var(--border);
     }
 
     .img-info { flex: 1; }
-    .img-name { font-size: 0.85rem; color: var(--text); }
-    .img-status { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .img-name { font-size: 0.82rem; color: var(--text); }
+    .img-status { font-size: 0.72rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
 
     .img-remove {
       background: none;
       border: none;
       color: var(--muted);
       cursor: pointer;
-      font-size: 1.1rem;
+      font-size: 1rem;
       padding: 4px;
-      line-height: 1;
     }
-
     .img-remove:hover { color: var(--pink); }
 
     .hint {
       margin-top: 10px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
       text-align: center;
     }
 
-    /* ── Status / Error ── */
+    /* ── Status ── */
     .status-bar {
       max-width: 780px;
-      margin: 16px auto 0;
+      margin: 14px auto 0;
       padding: 0 20px;
       display: none;
     }
-
     .status-bar.visible { display: block; }
 
     .status-msg {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px 16px;
+      padding: 11px 16px;
       font-size: 0.8rem;
       font-family: 'JetBrains Mono', monospace;
       color: var(--muted);
     }
-
     .status-msg.error { border-color: var(--pink); color: #ff6bb3; }
     .status-msg.info { border-color: var(--cyan); color: var(--cyan); }
     .status-msg.success { border-color: var(--success); color: var(--success); }
 
-    /* ── Results area ── */
+    /* ── Results ── */
     .results {
-      max-width: 1400px;
-      margin: 30px auto 0;
-      padding: 0 20px 60px;
+      margin: 24px 0 0;
+      padding: 0 20px 40px;
       display: none;
     }
-
     .results.visible { display: block; }
 
-    .results-header {
+    /* Top bar */
+    .results-topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
       gap: 10px;
     }
 
-    .results-title {
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .results-actions { display: flex; gap: 8px; align-items: center; }
-
-    .action-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      font-size: 0.8rem;
-      padding: 7px 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-
-    .preview-btn {
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(255,45,155,0.15));
-      border-color: var(--cyan);
-      color: var(--cyan);
-      font-weight: 700;
-    }
-
-    .preview-btn:hover { background: linear-gradient(135deg, rgba(0,229,255,0.25), rgba(255,45,155,0.25)); }
-
     .stats {
       display: flex;
-      gap: 16px;
+      gap: 14px;
       flex-wrap: wrap;
     }
 
@@ -290,215 +248,328 @@
       font-family: 'JetBrains Mono', monospace;
       color: var(--muted);
     }
-
     .stat strong { color: var(--cyan); }
 
-    /* ── Split panel ── */
-    .split-panel {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      height: 600px;
+    .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .action-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .preview-btn {
+      background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(255,45,155,0.12));
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: 700;
+    }
+    .preview-btn:hover { background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(255,45,155,0.22)); color: var(--cyan); }
+
+    .edit-btn {
+      background: rgba(167,139,250,0.1);
+      border-color: var(--purple);
+      color: var(--purple);
+      font-weight: 700;
+    }
+    .edit-btn:hover { background: rgba(167,139,250,0.2); color: var(--purple); }
+
+    /* ── Main workspace ── */
+    .workspace {
+      display: flex;
+      gap: 14px;
+      height: calc(100vh - 340px);
+      min-height: 500px;
     }
 
-    .split-panel.no-preview {
-      grid-template-columns: 1fr;
-    }
-
-    .split-panel.with-edit {
-      grid-template-columns: 300px 1fr 1fr;
-    }
-
-    /* ── Code panel ── */
+    /* Code panel — fixed slim width */
     .code-panel {
+      width: 340px;
+      flex-shrink: 0;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition: width 0.3s ease;
+    }
+
+    .code-panel.full-width {
+      width: 100%;
     }
 
     .panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,0.02);
+      flex-shrink: 0;
     }
 
     .panel-title {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
     }
 
     .panel-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--cyan);
     }
 
     .tabs {
       display: flex;
-      gap: 4px;
+      gap: 3px;
     }
 
     .tab {
       background: none;
       border: 1px solid transparent;
-      border-radius: 6px;
+      border-radius: 5px;
       color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      padding: 4px 10px;
+      font-size: 0.65rem;
+      padding: 3px 8px;
       cursor: pointer;
       transition: all 0.15s;
     }
-
     .tab.active { border-color: var(--border); color: var(--text); background: var(--border); }
     .tab:hover:not(.active) { color: var(--text); }
 
     .code-scroll {
       flex: 1;
       overflow: auto;
-      padding: 16px;
+      padding: 14px;
     }
+
+    .code-scroll::-webkit-scrollbar { width: 4px; }
+    .code-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
     pre {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      line-height: 1.6;
+      font-size: 0.75rem;
+      line-height: 1.65;
       white-space: pre-wrap;
       word-break: break-all;
       color: #a8b0d0;
-      counter-reset: line;
     }
 
-    /* ── Preview panel ── */
+    /* ── Right side (preview + edit stacked) ── */
+    .right-side {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    /* Preview panel — takes most space */
     .preview-panel {
+      flex: 1;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
     }
+
+    /* Fake browser chrome */
+    .browser-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.3);
+      flex-shrink: 0;
+    }
+
+    .browser-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .browser-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .bd-red { background: #ff5f56; }
+    .bd-yellow { background: #ffbd2e; }
+    .bd-green { background: #27c93f; }
+
+    .browser-url {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .browser-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .browser-close:hover { color: var(--pink); }
 
     .preview-frame {
       flex: 1;
       border: none;
       background: white;
+      width: 100%;
     }
 
     /* ── Edit panel ── */
     .edit-panel {
+      height: 260px;
+      flex-shrink: 0;
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(167,139,250,0.3);
       border-radius: 16px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
+    .edit-panel .panel-header {
+      border-bottom-color: rgba(167,139,250,0.2);
+    }
+
     .edit-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
+    .edit-messages::-webkit-scrollbar { width: 4px; }
+    .edit-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
     .edit-msg {
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-radius: 10px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       line-height: 1.5;
+      font-family: 'JetBrains Mono', monospace;
+      max-width: 85%;
     }
 
     .edit-msg.user {
-      background: rgba(0,229,255,0.1);
+      background: rgba(0,229,255,0.08);
       border: 1px solid rgba(0,229,255,0.2);
       color: var(--cyan);
       align-self: flex-end;
-      max-width: 85%;
     }
 
     .edit-msg.ai {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      color: var(--muted);
+      background: rgba(167,139,250,0.08);
+      border: 1px solid rgba(167,139,250,0.2);
+      color: var(--purple);
       align-self: flex-start;
-      max-width: 85%;
     }
 
     .edit-empty {
       flex: 1;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       color: var(--muted);
-      font-size: 0.8rem;
-      text-align: center;
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
       gap: 8px;
-      padding: 20px;
+      padding: 10px;
     }
 
-    .edit-empty-icon { font-size: 2rem; }
-
+    /* Edit input row at bottom */
     .edit-input-row {
-      padding: 12px;
-      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      border-top: 1px solid rgba(167,139,250,0.15);
       display: flex;
       gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.2);
     }
 
     .edit-input {
       flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(167,139,250,0.25);
+      border-radius: 10px;
       color: var(--text);
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.78rem;
-      padding: 8px 12px;
+      padding: 10px 14px;
       outline: none;
       resize: none;
-      height: 60px;
+      height: 42px;
+      line-height: 1.4;
+      transition: border-color 0.2s, height 0.2s;
     }
 
     .edit-input::placeholder { color: var(--muted); }
-    .edit-input:focus { border-color: var(--cyan); }
-
-    .edit-send {
-      background: linear-gradient(135deg, var(--cyan), #0099bb);
-      border: none;
-      border-radius: 8px;
-      color: #000;
-      font-weight: 700;
-      font-size: 1rem;
-      width: 40px;
-      cursor: pointer;
-      transition: all 0.2s;
-      align-self: flex-end;
-      height: 40px;
+    .edit-input:focus {
+      border-color: var(--purple);
+      height: 70px;
     }
 
-    .edit-send:hover { transform: scale(1.05); }
+    .edit-send {
+      background: linear-gradient(135deg, var(--purple), #7c3aed);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .edit-send:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(167,139,250,0.4); }
     .edit-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-    /* ── Loading spinner ── */
+    /* ── Spinner ── */
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 2px solid rgba(0,229,255,0.2);
       border-top-color: var(--cyan);
       border-radius: 50%;
@@ -509,48 +580,45 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Copy toast ── */
+    /* ── Toast ── */
     .toast {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
+      bottom: 24px;
+      right: 24px;
       background: var(--surface);
       border: 1px solid var(--success);
       color: var(--success);
       border-radius: 10px;
-      padding: 10px 18px;
+      padding: 9px 16px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       z-index: 1000;
       transform: translateY(80px);
-      transition: transform 0.3s ease;
+      opacity: 0;
+      transition: all 0.3s ease;
     }
+    .toast.show { transform: translateY(0); opacity: 1; }
 
-    .toast.show { transform: translateY(0); }
-
-    /* ── Detected URL badge ── */
     .detected-url {
       display: none;
       align-items: center;
       gap: 8px;
       margin-top: 10px;
-      padding: 8px 12px;
+      padding: 7px 12px;
       background: rgba(0,229,255,0.05);
       border: 1px solid rgba(0,229,255,0.2);
       border-radius: 8px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-family: 'JetBrains Mono', monospace;
       color: var(--cyan);
     }
-
     .detected-url.visible { display: flex; }
 
-    @media (max-width: 768px) {
-      .split-panel, .split-panel.with-edit {
-        grid-template-columns: 1fr;
-        height: auto;
-      }
-      .code-panel, .preview-panel, .edit-panel { height: 400px; }
+    @media (max-width: 900px) {
+      .workspace { flex-direction: column; height: auto; }
+      .code-panel { width: 100% !important; height: 400px; }
+      .right-side { min-height: 500px; }
+      .edit-panel { height: 240px; }
     }
   </style>
 </head>
@@ -585,7 +653,7 @@
         </div>
 
         <div class="detected-url" id="detectedUrl">
-          <span>🔍 URL detected from image:</span>
+          <span>🔍 AI detected URL:</span>
           <span id="detectedUrlText"></span>
         </div>
 
@@ -600,19 +668,21 @@
 
     <!-- Results -->
     <div class="results" id="results">
-      <div class="results-header">
+      <!-- Top bar -->
+      <div class="results-topbar">
         <div class="stats" id="stats"></div>
         <div class="results-actions">
           <button class="action-btn" id="copyBtn">⎘ Copy</button>
           <button class="action-btn" id="downloadBtn">↓ Download</button>
-          <button class="action-btn" id="editToggleBtn">✏ Edit with AI</button>
+          <button class="action-btn edit-btn" id="editToggleBtn">✏ Edit with AI</button>
           <button class="action-btn preview-btn" id="previewToggleBtn">👁 See how it looks</button>
         </div>
       </div>
 
-      <div class="split-panel no-preview" id="splitPanel">
+      <!-- Workspace -->
+      <div class="workspace" id="workspace">
         <!-- Code panel -->
-        <div class="code-panel">
+        <div class="code-panel full-width" id="codePanel">
           <div class="panel-header">
             <div class="panel-title">
               <div class="panel-dot"></div>
@@ -625,37 +695,38 @@
           </div>
         </div>
 
-        <!-- Preview panel (hidden initially) -->
-        <div class="preview-panel" id="previewPanel" style="display:none">
-          <div class="panel-header">
-            <div class="panel-title">
-              <div class="panel-dot" style="background:var(--pink)"></div>
-              <span>live preview</span>
+        <!-- Right side — shown when preview/edit active -->
+        <div class="right-side" id="rightSide" style="display:none">
+          <!-- Preview panel -->
+          <div class="preview-panel" id="previewPanel" style="display:none">
+            <div class="browser-bar">
+              <div class="browser-dots">
+                <div class="browser-dot bd-red"></div>
+                <div class="browser-dot bd-yellow"></div>
+                <div class="browser-dot bd-green"></div>
+              </div>
+              <div class="browser-url">preview — codepeek live render</div>
+              <button class="browser-close" id="closePreview">✕ close</button>
             </div>
-            <button class="action-btn" id="closePreview" style="font-size:0.7rem;padding:4px 10px">✕ Close</button>
+            <iframe class="preview-frame" id="previewFrame"></iframe>
           </div>
-          <iframe class="preview-frame" id="previewFrame"></iframe>
-        </div>
 
-        <!-- Edit panel (hidden initially) -->
-        <div class="edit-panel" id="editPanel" style="display:none">
-          <div class="panel-header">
-            <div class="panel-title">
-              <div class="panel-dot" style="background:#a78bfa"></div>
-              <span>AI editor</span>
+          <!-- Edit panel -->
+          <div class="edit-panel" id="editPanel" style="display:none">
+            <div class="panel-header">
+              <div class="panel-title">
+                <div class="panel-dot" style="background:var(--purple)"></div>
+                <span>AI Editor</span>
+              </div>
+              <button class="browser-close" id="closeEdit">✕ close</button>
             </div>
-            <button class="action-btn" id="closeEdit" style="font-size:0.7rem;padding:4px 10px">✕ Close</button>
-          </div>
-          <div class="edit-messages" id="editMessages">
-            <div class="edit-empty">
-              <div class="edit-empty-icon">✏️</div>
-              <div>Describe a change and AI will edit the code</div>
-              <div style="font-size:0.7rem;margin-top:4px">e.g. "make the background dark" or "add a footer"</div>
+            <div class="edit-messages" id="editMessages">
+              <div class="edit-empty" id="editEmpty">✏️ &nbsp; Describe a change — AI will update the code instantly</div>
             </div>
-          </div>
-          <div class="edit-input-row">
-            <textarea class="edit-input" id="editInput" placeholder="Describe what to change..."></textarea>
-            <button class="edit-send" id="editSend">→</button>
+            <div class="edit-input-row">
+              <textarea class="edit-input" id="editInput" placeholder="e.g. make the background dark blue, add a sticky navbar, change font to serif..."></textarea>
+              <button class="edit-send" id="editSend" title="Send">↑</button>
+            </div>
           </div>
         </div>
       </div>
@@ -666,51 +737,50 @@
   <input type="file" id="fileInput" accept="image/*" style="display:none" />
 
   <script>
-    // ── State ──
     let currentCode = '';
     let imageBase64 = null;
-    let imageFile = null;
     let showPreview = false;
     let showEdit = false;
 
-    // ── Elements ──
-    const mainInput = document.getElementById('mainInput');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const imgBtn = document.getElementById('imgBtn');
-    const fileInput = document.getElementById('fileInput');
-    const imagePreview = document.getElementById('imagePreview');
-    const imgThumb = document.getElementById('imgThumb');
-    const imgName = document.getElementById('imgName');
-    const imgRemove = document.getElementById('imgRemove');
-    const statusBar = document.getElementById('statusBar');
-    const statusMsg = document.getElementById('statusMsg');
-    const results = document.getElementById('results');
-    const codeDisplay = document.getElementById('codeDisplay');
-    const statsEl = document.getElementById('stats');
-    const copyBtn = document.getElementById('copyBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const previewToggleBtn = document.getElementById('previewToggleBtn');
-    const editToggleBtn = document.getElementById('editToggleBtn');
-    const splitPanel = document.getElementById('splitPanel');
-    const previewPanel = document.getElementById('previewPanel');
-    const previewFrame = document.getElementById('previewFrame');
-    const editPanel = document.getElementById('editPanel');
-    const closePreview = document.getElementById('closePreview');
-    const closeEdit = document.getElementById('closeEdit');
-    const editMessages = document.getElementById('editMessages');
-    const editInput = document.getElementById('editInput');
-    const editSend = document.getElementById('editSend');
-    const detectedUrlEl = document.getElementById('detectedUrl');
-    const detectedUrlText = document.getElementById('detectedUrlText');
-    const tabsEl = document.getElementById('tabs');
-    const toast = document.getElementById('toast');
+    const $ = id => document.getElementById(id);
+
+    const mainInput = $('mainInput');
+    const analyzeBtn = $('analyzeBtn');
+    const imgBtn = $('imgBtn');
+    const fileInput = $('fileInput');
+    const imagePreview = $('imagePreview');
+    const imgThumb = $('imgThumb');
+    const imgName = $('imgName');
+    const imgRemove = $('imgRemove');
+    const statusBar = $('statusBar');
+    const statusMsg = $('statusMsg');
+    const results = $('results');
+    const codeDisplay = $('codeDisplay');
+    const statsEl = $('stats');
+    const copyBtn = $('copyBtn');
+    const downloadBtn = $('downloadBtn');
+    const previewToggleBtn = $('previewToggleBtn');
+    const editToggleBtn = $('editToggleBtn');
+    const codePanel = $('codePanel');
+    const rightSide = $('rightSide');
+    const previewPanel = $('previewPanel');
+    const previewFrame = $('previewFrame');
+    const editPanel = $('editPanel');
+    const closePreview = $('closePreview');
+    const closeEdit = $('closeEdit');
+    const editMessages = $('editMessages');
+    const editInput = $('editInput');
+    const editSend = $('editSend');
+    const detectedUrlEl = $('detectedUrl');
+    const detectedUrlText = $('detectedUrlText');
+    const tabsEl = $('tabs');
+    const toast = $('toast');
 
     // ── Image upload ──
     imgBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
-      imageFile = file;
       const reader = new FileReader();
       reader.onload = ev => {
         imageBase64 = ev.target.result.split(',')[1];
@@ -725,20 +795,18 @@
 
     imgRemove.addEventListener('click', () => {
       imageBase64 = null;
-      imageFile = null;
       imagePreview.classList.remove('visible');
       imgBtn.classList.remove('has-image');
       mainInput.placeholder = 'Paste a URL, GitHub raw link, or any code...';
       fileInput.value = '';
     });
 
-    // ── Status helpers ──
+    // ── Status ──
     function showStatus(msg, type = '') {
-      statusMsg.textContent = msg;
+      statusMsg.innerHTML = msg;
       statusMsg.className = 'status-msg ' + type;
       statusBar.classList.add('visible');
     }
-
     function hideStatus() { statusBar.classList.remove('visible'); }
 
     // ── Stats ──
@@ -755,19 +823,19 @@
       `;
     }
 
-    // ── Tabs (HTML/Head/Body) ──
+    // ── Tabs ──
     function setupTabs(code) {
-      const isHTML = code.trim().toLowerCase().startsWith('<!doctype') || code.trim().toLowerCase().startsWith('<html');
       tabsEl.innerHTML = '';
+      const isHTML = code.trim().toLowerCase().startsWith('<!doctype') || code.trim().toLowerCase().startsWith('<html');
       if (!isHTML) return;
 
-      const tabs = [
+      const tabDefs = [
         { label: 'Full HTML', fn: () => code },
-        { label: 'Head Only', fn: () => { const m = code.match(/<head[\s\S]*?<\/head>/i); return m ? m[0] : 'No <head> found'; } },
-        { label: 'Body Only', fn: () => { const m = code.match(/<body[\s\S]*?<\/body>/i); return m ? m[0] : 'No <body> found'; } },
+        { label: 'Head', fn: () => { const m = code.match(/<head[\s\S]*?<\/head>/i); return m ? m[0] : 'No <head> found'; } },
+        { label: 'Body', fn: () => { const m = code.match(/<body[\s\S]*?<\/body>/i); return m ? m[0] : 'No <body> found'; } },
       ];
 
-      tabs.forEach((t, i) => {
+      tabDefs.forEach((t, i) => {
         const btn = document.createElement('button');
         btn.className = 'tab' + (i === 0 ? ' active' : '');
         btn.textContent = t.label;
@@ -796,92 +864,36 @@
         detectedUrlEl.classList.remove('visible');
       }
 
-      // Refresh preview if open
       if (showPreview) updatePreview();
     }
 
-    // ── Analyze ──
-    analyzeBtn.addEventListener('click', analyze);
-    mainInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) analyze(); });
+    // ── Layout update ──
+    function updateLayout() {
+      const anyRight = showPreview || showEdit;
 
-    async function analyze() {
-      const input = mainInput.value.trim();
-
-      if (!imageBase64 && !input) {
-        showStatus('⚠ Paste a URL, code, or upload an image first.', 'error');
-        return;
+      if (anyRight) {
+        codePanel.classList.remove('full-width');
+        rightSide.style.display = 'flex';
+      } else {
+        codePanel.classList.add('full-width');
+        rightSide.style.display = 'none';
       }
 
-      analyzeBtn.disabled = true;
-      detectedUrlEl.classList.remove('visible');
+      previewPanel.style.display = showPreview ? 'flex' : 'none';
+      editPanel.style.display = showEdit ? 'flex' : 'none';
 
-      // ── Code paste ──
-      if (!imageBase64 && input && !input.startsWith('http')) {
-        displayCode(input);
-        analyzeBtn.disabled = false;
-        return;
+      // If preview open, make it grow; if only edit open, preview takes no space
+      if (showPreview && !showEdit) {
+        previewPanel.style.flex = '1';
+      } else if (showPreview && showEdit) {
+        previewPanel.style.flex = '1';
       }
-
-      // ── URL only (no image) ──
-      if (!imageBase64 && input.startsWith('http')) {
-        showStatus('⏳ Fetching source code...', 'info');
-        try {
-          const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'url', url: input })
-          });
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-          displayCode(data.code);
-        } catch (err) {
-          showStatus('✕ ' + err.message, 'error');
-        }
-        analyzeBtn.disabled = false;
-        return;
-      }
-
-      // ── Image (+ optional URL) ──
-      if (imageBase64) {
-        showStatus('<span class="spinner"></span> Analyzing with Gemini Vision...', 'info');
-        statusMsg.innerHTML = '<span class="spinner"></span> Analyzing with Gemini Vision...';
-        try {
-          const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'image',
-              imageBase64,
-              url: input.startsWith('http') ? input : null
-            })
-          });
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-          displayCode(data.code, data.detectedUrl);
-        } catch (err) {
-          showStatus('✕ ' + err.message, 'error');
-        }
-        analyzeBtn.disabled = false;
-        return;
-      }
-
-      analyzeBtn.disabled = false;
     }
 
     // ── Preview ──
     function updatePreview() {
       const blob = new Blob([currentCode], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      previewFrame.src = url;
-    }
-
-    function updateLayout() {
-      previewPanel.style.display = showPreview ? '' : 'none';
-      editPanel.style.display = showEdit ? '' : 'none';
-
-      splitPanel.className = 'split-panel';
-      if (!showPreview && !showEdit) splitPanel.classList.add('no-preview');
-      else if (showPreview && showEdit) splitPanel.classList.add('with-edit');
+      previewFrame.src = URL.createObjectURL(blob);
     }
 
     previewToggleBtn.addEventListener('click', () => {
@@ -889,14 +901,17 @@
       updateLayout();
       if (showPreview) updatePreview();
       previewToggleBtn.textContent = showPreview ? '✕ Close Preview' : '👁 See how it looks';
+      previewToggleBtn.style.borderColor = showPreview ? 'var(--pink)' : '';
     });
 
     closePreview.addEventListener('click', () => {
       showPreview = false;
       updateLayout();
       previewToggleBtn.textContent = '👁 See how it looks';
+      previewToggleBtn.style.borderColor = '';
     });
 
+    // ── Edit panel ──
     editToggleBtn.addEventListener('click', () => {
       showEdit = !showEdit;
       updateLayout();
@@ -911,29 +926,29 @@
 
     // ── AI Edit ──
     editSend.addEventListener('click', sendEdit);
-    editInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEdit(); } });
+    editInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEdit(); }
+    });
 
     async function sendEdit() {
       const instruction = editInput.value.trim();
       if (!instruction || !currentCode) return;
 
-      // Clear empty state
-      const empty = editMessages.querySelector('.edit-empty');
-      if (empty) empty.remove();
+      const emptyEl = $('editEmpty');
+      if (emptyEl) emptyEl.remove();
 
-      // User message
       const userMsg = document.createElement('div');
       userMsg.className = 'edit-msg user';
       userMsg.textContent = instruction;
       editMessages.appendChild(userMsg);
       editInput.value = '';
+      editInput.style.height = '42px';
       editSend.disabled = true;
       editMessages.scrollTop = editMessages.scrollHeight;
 
-      // AI thinking
       const aiMsg = document.createElement('div');
       aiMsg.className = 'edit-msg ai';
-      aiMsg.innerHTML = '<span class="spinner"></span> Editing code...';
+      aiMsg.innerHTML = '<span class="spinner"></span> Editing...';
       editMessages.appendChild(aiMsg);
       editMessages.scrollTop = editMessages.scrollHeight;
 
@@ -961,6 +976,70 @@
       editMessages.scrollTop = editMessages.scrollHeight;
     }
 
+    // ── Analyze ──
+    analyzeBtn.addEventListener('click', analyze);
+    mainInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) analyze(); });
+
+    async function analyze() {
+      const input = mainInput.value.trim();
+
+      if (!imageBase64 && !input) {
+        showStatus('⚠ Paste a URL, code, or upload an image first.', 'error');
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      detectedUrlEl.classList.remove('visible');
+
+      if (!imageBase64 && input && !input.startsWith('http')) {
+        displayCode(input);
+        analyzeBtn.disabled = false;
+        return;
+      }
+
+      if (!imageBase64 && input.startsWith('http')) {
+        showStatus('<span class="spinner"></span> Fetching source code...', 'info');
+        try {
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'url', url: input })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          displayCode(data.code);
+        } catch (err) {
+          showStatus('✕ ' + err.message, 'error');
+        }
+        analyzeBtn.disabled = false;
+        return;
+      }
+
+      if (imageBase64) {
+        showStatus('<span class="spinner"></span> Analyzing with Gemini Vision...', 'info');
+        try {
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'image',
+              imageBase64,
+              url: input.startsWith('http') ? input : null
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          displayCode(data.code, data.detectedUrl);
+        } catch (err) {
+          showStatus('✕ ' + err.message, 'error');
+        }
+        analyzeBtn.disabled = false;
+        return;
+      }
+
+      analyzeBtn.disabled = false;
+    }
+
     // ── Copy ──
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(currentCode);
@@ -978,3 +1057,4 @@
     });
   </script>
 </body>
+</html>
