@@ -18,24 +18,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ code });
     }
 
-    // ── CASE 2: URL only → fetch source via CORS proxy ──
+    // ── CASE 2: URL only → fetch directly (server has no CORS issues) ──
     if (type === 'url') {
-      const proxies = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-        `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      ];
       let sourceCode = null;
-      for (const proxy of proxies) {
+      try {
+        const r = await fetch(url, {
+          signal: AbortSignal.timeout(10000),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          }
+        });
+        if (r.ok) sourceCode = await r.text();
+      } catch {}
+
+      // Fallback to proxy if direct fetch fails
+      if (!sourceCode) {
         try {
-          const r = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+          const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
           if (r.ok) {
             const data = await r.json().catch(() => null);
-            sourceCode = data?.contents || await r.text();
-            if (sourceCode) break;
+            sourceCode = data?.contents || null;
           }
         } catch {}
       }
-      if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });H
+
+      if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });
       return res.status(200).json({ code: sourceCode });
     }
 
@@ -47,7 +55,7 @@ export default async function handler(req, res) {
       // Step 1: If no URL provided, ask Gemini to extract one from the image
       if (!resolvedUrl) {
         const extractRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -68,23 +76,17 @@ export default async function handler(req, res) {
         }
       }
 
-      // Step 2: If we have a URL (provided or extracted), fetch the source
+      // Step 2: If we have a URL (provided or extracted), fetch the source directly
       if (resolvedUrl) {
         try {
-          const proxies = [
-            `https://api.allorigins.win/get?url=${encodeURIComponent(resolvedUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(resolvedUrl)}`,
-          ];
-          for (const proxy of proxies) {
-            try {
-              const r = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-              if (r.ok) {
-                const data = await r.json().catch(() => null);
-                urlSourceCode = data?.contents || await r.text();
-                if (urlSourceCode) break;
-              }
-            } catch {}
-          }
+          const r = await fetch(resolvedUrl, {
+            signal: AbortSignal.timeout(10000),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            }
+          });
+          if (r.ok) urlSourceCode = await r.text();
         } catch {}
       }
 
@@ -104,7 +106,7 @@ export default async function handler(req, res) {
       promptParts.push({ text: textPrompt });
 
       const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -125,7 +127,7 @@ export default async function handler(req, res) {
     if (type === 'edit') {
       const { currentCode, instruction } = req.body;
       const editRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
