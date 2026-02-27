@@ -708,7 +708,7 @@
               <div class="browser-url">preview — codepeek live render</div>
               <button class="browser-close" id="closePreview">✕ close</button>
             </div>
-            <iframe class="preview-frame" id="previewFrame"></iframe>
+            <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts"></iframe>
           </div>
 
           <!-- Edit panel -->
@@ -892,6 +892,8 @@
 
     // ── Preview ──
     function updatePreview() {
+      const oldUrl = previewFrame.src;
+      if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
       const blob = new Blob([currentCode], { type: 'text/html' });
       previewFrame.src = URL.createObjectURL(blob);
     }
