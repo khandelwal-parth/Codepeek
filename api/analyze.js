@@ -35,7 +35,7 @@ export default async function handler(req, res) {
           }
         } catch {}
       }
-      if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });
+      if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });H
       return res.status(200).json({ code: sourceCode });
     }
 
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       // Step 1: If no URL provided, ask Gemini to extract one from the image
       if (!resolvedUrl) {
         const extractRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     if (type === 'edit') {
       const { currentCode, instruction } = req.body;
       const editRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
