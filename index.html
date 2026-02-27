@@ -1,639 +1,980 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CodePeek — Inspect Any Website</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #08090f;
-    --surface: #0f1018;
-    --border: #1e1e2e;
-    --cyan: #00ffe5;
-    --pink: #ff3cac;
-    --text: #e8e8f0;
-    --muted: #5a5a72;
-    --code-bg: #0b0b14;
-  }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(0,255,229,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,229,0.025) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none; z-index: 0;
-  }
-  .orb {
-    position: fixed; width: 700px; height: 700px;
-    border-radius: 50%; filter: blur(130px); opacity: 0.09;
-    pointer-events: none; z-index: 0;
-    animation: drift 9s ease-in-out infinite alternate;
-  }
-  .orb.a { background: var(--cyan); top: -250px; left: -150px; }
-  .orb.b { background: var(--pink); bottom: -250px; right: -150px; animation-delay: -4.5s; }
-  @keyframes drift { from{transform:translate(0,0)} to{transform:translate(50px,35px)} }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodePeek</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08090f;
+      --surface: #0e0f1a;
+      --border: #1e2035;
+      --cyan: #00e5ff;
+      --pink: #ff2d9b;
+      --text: #e8eaf0;
+      --muted: #555878;
+      --success: #00ff88;
+    }
 
-  .wrap {
-    position: relative; z-index: 1;
-    max-width: 980px; margin: 0 auto;
-    padding: 48px 24px 80px;
-  }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ── Header ── */
-  header { text-align: center; margin-bottom: 52px; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0,255,229,0.06); border: 1px solid rgba(0,255,229,0.15);
-    border-radius: 100px; padding: 6px 16px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; color: var(--cyan);
-    letter-spacing: 2px; text-transform: uppercase;
-    margin-bottom: 24px;
-  }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: blink 2s infinite; }
-  h1 {
-    font-size: clamp(64px, 11vw, 120px);
-    font-weight: 800; line-height: 0.9;
-    letter-spacing: -4px; margin-bottom: 20px;
-  }
-  h1 em {
-    font-style: normal;
-    background: linear-gradient(135deg, var(--cyan) 0%, #00b4d8 40%, var(--pink) 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  }
-  .sub {
-    color: var(--muted); font-family: 'JetBrains Mono', monospace;
-    font-size: 13px; line-height: 1.8; max-width: 480px; margin: 0 auto;
-  }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-  /* ── Input Card ── */
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 28px;
-    position: relative; overflow: hidden; margin-bottom: 24px;
-  }
-  .card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: 0.35;
-  }
+    /* ── Grid background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-  .input-wrap {
-    display: flex; gap: 10px; align-items: stretch;
-  }
+    /* ── Orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-cyan { width: 400px; height: 400px; background: rgba(0,229,255,0.08); top: -100px; left: -100px; }
+    .orb-pink { width: 350px; height: 350px; background: rgba(255,45,155,0.08); bottom: -80px; right: -80px; }
 
-  input[type=text] {
-    flex: 1;
-    background: var(--code-bg); border: 1px solid var(--border);
-    color: var(--text); font-family: 'JetBrains Mono', monospace;
-    font-size: 14px; padding: 15px 20px; border-radius: 12px;
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  input[type=text]::placeholder { color: var(--muted); }
-  input[type=text]:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,255,229,0.07); }
+    /* ── Main layout ── */
+    .app { position: relative; z-index: 1; }
 
-  /* image upload btn */
-  .img-btn {
-    width: 52px; height: 52px; flex-shrink: 0;
-    background: var(--code-bg); border: 1px solid var(--border);
-    border-radius: 12px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; color: var(--muted); position: relative;
-  }
-  .img-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-  .img-btn.has-image { border-color: var(--cyan); color: var(--cyan); background: rgba(0,255,229,0.06); }
-  .img-btn svg { width: 20px; height: 20px; }
-  .img-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
 
-  /* analyze btn */
-  .go {
-    background: linear-gradient(135deg, var(--cyan), #00b4d8);
-    color: #000; font-family: 'Syne', sans-serif;
-    font-size: 14px; font-weight: 800;
-    padding: 0 28px; border: none; border-radius: 12px;
-    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
-    white-space: nowrap; letter-spacing: 0.5px;
-  }
-  .go:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(0,255,229,0.3); }
-  .go:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .badge {
+      display: inline-block;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-family: 'JetBrains Mono', monospace;
+    }
 
-  .note {
-    background: rgba(0,255,229,0.04); border: 1px solid rgba(0,255,229,0.1);
-    border-radius: 10px; padding: 11px 16px;
-    font-size: 12px; color: rgba(0,255,229,0.5);
-    font-family: 'JetBrains Mono', monospace;
-    margin-top: 14px; line-height: 1.7;
-  }
+    .logo {
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
 
-  /* image preview strip */
-  .img-preview {
-    display: none; margin-top: 14px;
-    background: var(--code-bg); border: 1px solid rgba(0,255,229,0.2);
-    border-radius: 10px; padding: 10px 14px;
-    display: none; align-items: center; gap: 12px;
-  }
-  .img-preview.show { display: flex; }
-  .img-preview img { height: 48px; width: 80px; object-fit: cover; border-radius: 6px; }
-  .img-preview-info { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); }
-  .img-preview-info span { color: var(--muted); font-size: 11px; display: block; margin-top: 2px; }
-  .img-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; transition: color 0.15s; }
-  .img-clear:hover { color: var(--pink); }
+    .logo span {
+      background: linear-gradient(135deg, var(--cyan), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
-  /* ── Stats ── */
-  .stats-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 12px; margin-bottom: 20px;
-  }
-  @media(max-width:600px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
-  .stat-box {
-    background: rgba(0,255,229,0.04); border: 1px solid rgba(0,255,229,0.1);
-    border-radius: 12px; padding: 18px; text-align: center;
-    animation: fadeUp 0.4s ease both;
-  }
-  .stat-box:nth-child(2){animation-delay:.05s} .stat-box:nth-child(3){animation-delay:.1s} .stat-box:nth-child(4){animation-delay:.15s}
-  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .stat-value { font-size: 30px; font-weight: 800; color: var(--cyan); margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
 
-  /* ── Output Card ── */
-  .output-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; overflow: hidden;
-    animation: fadeUp 0.4s ease both;
-  }
-  .output-topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 22px; background: rgba(0,0,0,0.35);
-    border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;
-  }
-  .output-meta { display: flex; align-items: center; gap: 10px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
-  .dot.live { background: var(--cyan); animation: blink 2s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-  .output-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+    /* ── Input card ── */
+    .input-card {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
 
-  .btn-row { display: flex; gap: 8px; }
-  .action-btn {
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 14px;
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--text); cursor: pointer; transition: all 0.15s;
-  }
-  .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .input-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
 
-  .tabs-bar {
-    padding: 0 22px; background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--border);
-    display: flex; gap: 0;
-  }
-  .vtab {
-    background: transparent; border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--muted); font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-    padding: 11px 18px; cursor: pointer; transition: all 0.15s; margin-bottom: -1px;
-  }
-  .vtab:hover { color: var(--cyan); }
-  .vtab.on { border-bottom-color: var(--cyan); color: var(--cyan); }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
 
-  .code-view {
-    padding: 22px 26px;
-    font-family: 'JetBrains Mono', monospace; font-size: 13px;
-    line-height: 1.85; color: #9ab4c8;
-    white-space: pre-wrap; word-break: break-all;
-    max-height: 580px; overflow-y: auto;
-    counter-reset: line;
-  }
-  .code-view::-webkit-scrollbar { width: 5px; }
-  .code-view::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  .code-line { display: flex; gap: 0; }
-  .ln { color: #2a2a40; display: inline-block; width: 44px; text-align: right; margin-right: 22px; user-select: none; font-size: 11px; flex-shrink: 0; padding-top: 1px; }
+    .main-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      padding: 10px 0;
+    }
 
-  /* ── States ── */
-  .empty-state {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; min-height: 300px;
-    gap: 12px; color: var(--muted); text-align: center;
-  }
-  .empty-icon { font-size: 48px; opacity: 0.2; margin-bottom: 4px; }
+    .main-input::placeholder { color: var(--muted); }
 
-  .loader-wrap {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 240px; gap: 16px;
-    color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-size: 13px;
-  }
-  .spinner {
-    width: 22px; height: 22px; flex-shrink: 0;
-    border: 2px solid rgba(0,255,229,0.15); border-top-color: var(--cyan);
-    border-radius: 50%; animation: spin 0.65s linear infinite;
-  }
-  @keyframes spin { to{transform:rotate(360deg)} }
+    .img-btn {
+      background: var(--border);
+      border: 1px solid #2a2d4a;
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 10px 12px;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      position: relative;
+    }
 
-  .error-wrap {
-    background: rgba(255,60,172,0.07); border: 1px solid rgba(255,60,172,0.22);
-    border-radius: 14px; padding: 22px 26px;
-    color: rgba(255,60,172,0.85); font-family: 'JetBrains Mono', monospace;
-    font-size: 12px; line-height: 2;
-  }
+    .img-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .img-btn.has-image { border-color: var(--success); color: var(--success); }
 
-  /* syntax colors */
-  .kw{color:#00ffe5} .val{color:#ff3cac} .str{color:#00d084} .cmt{color:#3a3a55} .tag{color:#f7c948} .attr{color:#7ec8e3}
-</style>
+    .analyze-btn {
+      background: linear-gradient(135deg, var(--cyan), #0099bb);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,229,255,0.3); }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .image-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .image-preview.visible { display: flex; }
+
+    .img-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .img-info { flex: 1; }
+    .img-name { font-size: 0.85rem; color: var(--text); }
+    .img-status { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    .img-remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .img-remove:hover { color: var(--pink); }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+    }
+
+    /* ── Status / Error ── */
+    .status-bar {
+      max-width: 780px;
+      margin: 16px auto 0;
+      padding: 0 20px;
+      display: none;
+    }
+
+    .status-bar.visible { display: block; }
+
+    .status-msg {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted);
+    }
+
+    .status-msg.error { border-color: var(--pink); color: #ff6bb3; }
+    .status-msg.info { border-color: var(--cyan); color: var(--cyan); }
+    .status-msg.success { border-color: var(--success); color: var(--success); }
+
+    /* ── Results area ── */
+    .results {
+      max-width: 1400px;
+      margin: 30px auto 0;
+      padding: 0 20px 60px;
+      display: none;
+    }
+
+    .results.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .results-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .results-actions { display: flex; gap: 8px; align-items: center; }
+
+    .action-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .preview-btn {
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(255,45,155,0.15));
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .preview-btn:hover { background: linear-gradient(135deg, rgba(0,229,255,0.25), rgba(255,45,155,0.25)); }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted);
+    }
+
+    .stat strong { color: var(--cyan); }
+
+    /* ── Split panel ── */
+    .split-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      height: 600px;
+    }
+
+    .split-panel.no-preview {
+      grid-template-columns: 1fr;
+    }
+
+    .split-panel.with-edit {
+      grid-template-columns: 300px 1fr 1fr;
+    }
+
+    /* ── Code panel ── */
+    .code-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .panel-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab.active { border-color: var(--border); color: var(--text); background: var(--border); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .code-scroll {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #a8b0d0;
+      counter-reset: line;
+    }
+
+    /* ── Preview panel ── */
+    .preview-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-frame {
+      flex: 1;
+      border: none;
+      background: white;
+    }
+
+    /* ── Edit panel ── */
+    .edit-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .edit-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .edit-msg {
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .edit-msg.user {
+      background: rgba(0,229,255,0.1);
+      border: 1px solid rgba(0,229,255,0.2);
+      color: var(--cyan);
+      align-self: flex-end;
+      max-width: 85%;
+    }
+
+    .edit-msg.ai {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      align-self: flex-start;
+      max-width: 85%;
+    }
+
+    .edit-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+      gap: 8px;
+      padding: 20px;
+    }
+
+    .edit-empty-icon { font-size: 2rem; }
+
+    .edit-input-row {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .edit-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      padding: 8px 12px;
+      outline: none;
+      resize: none;
+      height: 60px;
+    }
+
+    .edit-input::placeholder { color: var(--muted); }
+    .edit-input:focus { border-color: var(--cyan); }
+
+    .edit-send {
+      background: linear-gradient(135deg, var(--cyan), #0099bb);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: 700;
+      font-size: 1rem;
+      width: 40px;
+      cursor: pointer;
+      transition: all 0.2s;
+      align-self: flex-end;
+      height: 40px;
+    }
+
+    .edit-send:hover { transform: scale(1.05); }
+    .edit-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0,229,255,0.2);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Copy toast ── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--surface);
+      border: 1px solid var(--success);
+      color: var(--success);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      z-index: 1000;
+      transform: translateY(80px);
+      transition: transform 0.3s ease;
+    }
+
+    .toast.show { transform: translateY(0); }
+
+    /* ── Detected URL badge ── */
+    .detected-url {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(0,229,255,0.05);
+      border: 1px solid rgba(0,229,255,0.2);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--cyan);
+    }
+
+    .detected-url.visible { display: flex; }
+
+    @media (max-width: 768px) {
+      .split-panel, .split-panel.with-edit {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .code-panel, .preview-panel, .edit-panel { height: 400px; }
+    }
+  </style>
 </head>
 <body>
-<div class="orb a"></div>
-<div class="orb b"></div>
+  <div class="orb orb-cyan"></div>
+  <div class="orb orb-pink"></div>
 
-<div class="wrap">
-  <header>
-    <div class="badge"><span class="badge-dot"></span> Code Inspector</div>
-    <h1>Code<em>Peek</em></h1>
-    <p class="sub">Paste a URL, drop some code, or upload a screenshot — get the source instantly.</p>
-  </header>
-
-  <!-- Input -->
-  <div class="card">
-    <div class="input-wrap">
-      <input type="text" id="mainInput" placeholder="Paste a URL or code..." autocomplete="off" spellcheck="false" />
-
-      <label class="img-btn" id="imgBtn" title="Upload screenshot for AI analysis">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="3" y="5" width="18" height="14" rx="2"/>
-          <circle cx="8.5" cy="10.5" r="1.5"/>
-          <path d="M21 15l-5-5L5 19"/>
-        </svg>
-        <input type="file" id="imgInput" accept="image/*" style="display:none" />
-      </label>
-
-      <button class="go" id="goBtn" onclick="analyze()">Analyze →</button>
+  <div class="app">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="badge">● CODE INSPECTOR</div>
+      <h1 class="logo">Code<span>Peek</span></h1>
+      <p class="subtitle">Paste a URL, drop some code, or upload a screenshot — get the source instantly.</p>
     </div>
 
-    <!-- image preview -->
-    <div class="img-preview" id="imgPreview">
-      <img id="imgThumb" src="" alt="preview" />
-      <div class="img-preview-info">
-        <span id="imgName">image.png</span>
-        <span>Ready for AI analysis · Gemini Vision</span>
-      </div>
-      <button class="img-clear" onclick="clearImage()" title="Remove image">✕</button>
-    </div>
+    <!-- Input -->
+    <div class="input-card">
+      <div class="input-box">
+        <div class="input-row">
+          <input type="text" class="main-input" id="mainInput" placeholder="Paste a URL, GitHub raw link, or any code..." />
+          <button class="img-btn" id="imgBtn" title="Upload screenshot">📷</button>
+          <button class="analyze-btn" id="analyzeBtn">Analyze →</button>
+        </div>
 
-    <div class="note" id="mainNote">⚡ Auto-detects URLs, raw files, pasted code, or screenshots — no mode switching needed.</div>
-  </div>
+        <div class="image-preview" id="imagePreview">
+          <img class="img-thumb" id="imgThumb" src="" alt="" />
+          <div class="img-info">
+            <div class="img-name" id="imgName"></div>
+            <div class="img-status">Ready for AI analysis · Gemini Vision</div>
+          </div>
+          <button class="img-remove" id="imgRemove">✕</button>
+        </div>
 
-  <!-- Stats -->
-  <div id="statsGrid" class="stats-grid" style="display:none"></div>
+        <div class="detected-url" id="detectedUrl">
+          <span>🔍 URL detected from image:</span>
+          <span id="detectedUrlText"></span>
+        </div>
 
-  <!-- Output -->
-  <div id="outputCard" style="display:none" class="output-card">
-    <div class="output-topbar">
-      <div class="output-meta">
-        <div class="dot live"></div>
-        <span class="output-label" id="outputLabel">OUTPUT</span>
-      </div>
-      <div class="btn-row">
-        <button class="action-btn" onclick="downloadCode()">↓ Download</button>
-        <button class="action-btn" id="copyBtn" onclick="copyCode()">Copy Code</button>
+        <div class="hint">⚡ Auto-detects URLs, raw files, pasted code, or screenshots — no mode switching needed.</div>
       </div>
     </div>
-    <div class="tabs-bar" id="tabsBar"></div>
-    <div class="code-view" id="codeView"></div>
-  </div>
 
-  <!-- Status / error -->
-  <div id="statusArea"></div>
+    <!-- Status -->
+    <div class="status-bar" id="statusBar">
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
 
-  <!-- Empty default -->
-  <div class="output-card" id="emptyCard">
-    <div class="empty-state">
-      <div class="empty-icon">&lt;/&gt;</div>
-      <p style="font-size:15px">Nothing loaded yet</p>
-      <span style="font-size:12px;opacity:0.5">Paste a URL, drop code, or upload a screenshot above</span>
+    <!-- Results -->
+    <div class="results" id="results">
+      <div class="results-header">
+        <div class="stats" id="stats"></div>
+        <div class="results-actions">
+          <button class="action-btn" id="copyBtn">⎘ Copy</button>
+          <button class="action-btn" id="downloadBtn">↓ Download</button>
+          <button class="action-btn" id="editToggleBtn">✏ Edit with AI</button>
+          <button class="action-btn preview-btn" id="previewToggleBtn">👁 See how it looks</button>
+        </div>
+      </div>
+
+      <div class="split-panel no-preview" id="splitPanel">
+        <!-- Code panel -->
+        <div class="code-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <div class="panel-dot"></div>
+              <span id="codeLabel">source.html</span>
+            </div>
+            <div class="tabs" id="tabs"></div>
+          </div>
+          <div class="code-scroll">
+            <pre id="codeDisplay"></pre>
+          </div>
+        </div>
+
+        <!-- Preview panel (hidden initially) -->
+        <div class="preview-panel" id="previewPanel" style="display:none">
+          <div class="panel-header">
+            <div class="panel-title">
+              <div class="panel-dot" style="background:var(--pink)"></div>
+              <span>live preview</span>
+            </div>
+            <button class="action-btn" id="closePreview" style="font-size:0.7rem;padding:4px 10px">✕ Close</button>
+          </div>
+          <iframe class="preview-frame" id="previewFrame"></iframe>
+        </div>
+
+        <!-- Edit panel (hidden initially) -->
+        <div class="edit-panel" id="editPanel" style="display:none">
+          <div class="panel-header">
+            <div class="panel-title">
+              <div class="panel-dot" style="background:#a78bfa"></div>
+              <span>AI editor</span>
+            </div>
+            <button class="action-btn" id="closeEdit" style="font-size:0.7rem;padding:4px 10px">✕ Close</button>
+          </div>
+          <div class="edit-messages" id="editMessages">
+            <div class="edit-empty">
+              <div class="edit-empty-icon">✏️</div>
+              <div>Describe a change and AI will edit the code</div>
+              <div style="font-size:0.7rem;margin-top:4px">e.g. "make the background dark" or "add a footer"</div>
+            </div>
+          </div>
+          <div class="edit-input-row">
+            <textarea class="edit-input" id="editInput" placeholder="Describe what to change..."></textarea>
+            <button class="edit-send" id="editSend">→</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-// ─────────────────────────────────────────────
-//  CONFIG — replace with your Gemini API key
-// ─────────────────────────────────────────────
-const GEMINI_API_KEY = "AIzaSyDn66Os7qR3EbUKPwG-SMYPcjiQqUjHbEY";
+  <div class="toast" id="toast">✓ Copied to clipboard</div>
+  <input type="file" id="fileInput" accept="image/*" style="display:none" />
 
-// ─────────────────────────────────────────────
-let rawCode = '';
-let currentView = 'full';
-let uploadedImage = null; // { base64, mimeType, name }
+  <script>
+    // ── State ──
+    let currentCode = '';
+    let imageBase64 = null;
+    let imageFile = null;
+    let showPreview = false;
+    let showEdit = false;
 
-// Image upload
-document.getElementById('imgInput').addEventListener('change', function() {
-  const file = this.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const dataUrl = e.target.result;
-    const base64 = dataUrl.split(',')[1];
-    uploadedImage = { base64, mimeType: file.type, name: file.name, dataUrl };
-    document.getElementById('imgThumb').src = dataUrl;
-    document.getElementById('imgName').textContent = file.name;
-    document.getElementById('imgPreview').classList.add('show');
-    document.getElementById('imgBtn').classList.add('has-image');
-    document.getElementById('mainInput').placeholder = 'Image loaded — click Analyze to detect UI';
-  };
-  reader.readAsDataURL(file);
-});
+    // ── Elements ──
+    const mainInput = document.getElementById('mainInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const imgBtn = document.getElementById('imgBtn');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const imgThumb = document.getElementById('imgThumb');
+    const imgName = document.getElementById('imgName');
+    const imgRemove = document.getElementById('imgRemove');
+    const statusBar = document.getElementById('statusBar');
+    const statusMsg = document.getElementById('statusMsg');
+    const results = document.getElementById('results');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const statsEl = document.getElementById('stats');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const previewToggleBtn = document.getElementById('previewToggleBtn');
+    const editToggleBtn = document.getElementById('editToggleBtn');
+    const splitPanel = document.getElementById('splitPanel');
+    const previewPanel = document.getElementById('previewPanel');
+    const previewFrame = document.getElementById('previewFrame');
+    const editPanel = document.getElementById('editPanel');
+    const closePreview = document.getElementById('closePreview');
+    const closeEdit = document.getElementById('closeEdit');
+    const editMessages = document.getElementById('editMessages');
+    const editInput = document.getElementById('editInput');
+    const editSend = document.getElementById('editSend');
+    const detectedUrlEl = document.getElementById('detectedUrl');
+    const detectedUrlText = document.getElementById('detectedUrlText');
+    const tabsEl = document.getElementById('tabs');
+    const toast = document.getElementById('toast');
 
-function clearImage() {
-  uploadedImage = null;
-  document.getElementById('imgInput').value = '';
-  document.getElementById('imgPreview').classList.remove('show');
-  document.getElementById('imgBtn').classList.remove('has-image');
-  document.getElementById('mainInput').placeholder = 'Paste a URL or code...';
-}
+    // ── Image upload ──
+    imgBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      imageFile = file;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        imageBase64 = ev.target.result.split(',')[1];
+        imgThumb.src = ev.target.result;
+        imgName.textContent = file.name;
+        imagePreview.classList.add('visible');
+        imgBtn.classList.add('has-image');
+        mainInput.placeholder = 'Optional: paste URL to help AI reconstruct better...';
+      };
+      reader.readAsDataURL(file);
+    });
 
-// ─── Main entry ───────────────────────────────
-async function analyze() {
-  const input = document.getElementById('mainInput').value.trim();
+    imgRemove.addEventListener('click', () => {
+      imageBase64 = null;
+      imageFile = null;
+      imagePreview.classList.remove('visible');
+      imgBtn.classList.remove('has-image');
+      mainInput.placeholder = 'Paste a URL, GitHub raw link, or any code...';
+      fileInput.value = '';
+    });
 
-  // Priority: image first, then input
-  if (uploadedImage) {
-    await analyzeImage();
-  } else if (!input) {
-    shakeInput();
-  } else if (input.startsWith('http')) {
-    if (input.includes('raw.githubusercontent.com') || input.includes('gist.githubusercontent.com') || input.includes('pastebin.com/raw')) {
-      await fetchRaw(input);
-    } else {
-      await fetchWithProxies(input);
+    // ── Status helpers ──
+    function showStatus(msg, type = '') {
+      statusMsg.textContent = msg;
+      statusMsg.className = 'status-msg ' + type;
+      statusBar.classList.add('visible');
     }
-  } else {
-    // Pasted code
-    showOutput(input, 'PASTED CODE');
-  }
-}
 
-// ─── Fetch via CORS proxies ───────────────────
-async function fetchWithProxies(url) {
-  showLoading('Fetching source code...');
-  setGoDisabled(true);
+    function hideStatus() { statusBar.classList.remove('visible'); }
 
-  const proxies = [
-    { name: 'allorigins', fn: async () => {
-      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-      const d = await r.json();
-      if (!d.contents || d.contents.length < 50) throw new Error('Empty');
-      return d.contents;
-    }},
-    { name: 'corsproxy.io', fn: async () => {
-      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.text(); if (t.length < 50) throw new Error('Empty'); return t;
-    }},
-    { name: 'codetabs', fn: async () => {
-      const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.text(); if (t.length < 50) throw new Error('Empty'); return t;
-    }},
-    { name: 'thingproxy', fn: async () => {
-      const r = await fetch(`https://thingproxy.freeboard.io/fetch/${url}`);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.text(); if (t.length < 50) throw new Error('Empty'); return t;
-    }},
-  ];
+    // ── Stats ──
+    function updateStats(code) {
+      const lines = code.split('\n').length;
+      const chars = code.length;
+      const size = (new Blob([code]).size / 1024).toFixed(1);
+      const fns = (code.match(/function\s+\w+|=>\s*{|addEventListener/g) || []).length;
+      statsEl.innerHTML = `
+        <div class="stat">Lines: <strong>${lines.toLocaleString()}</strong></div>
+        <div class="stat">Chars: <strong>${chars.toLocaleString()}</strong></div>
+        <div class="stat">Size: <strong>${size}kb</strong></div>
+        <div class="stat">Functions: <strong>${fns}</strong></div>
+      `;
+    }
 
-  let html = null;
-  const log = [];
-  for (const p of proxies) {
-    try {
-      html = await Promise.race([p.fn(), timeout(8000)]);
-      log.push('✓ ' + p.name);
-      break;
-    } catch(e) { log.push('✗ ' + p.name + ': ' + e.message); }
-  }
+    // ── Tabs (HTML/Head/Body) ──
+    function setupTabs(code) {
+      const isHTML = code.trim().toLowerCase().startsWith('<!doctype') || code.trim().toLowerCase().startsWith('<html');
+      tabsEl.innerHTML = '';
+      if (!isHTML) return;
 
-  setGoDisabled(false);
+      const tabs = [
+        { label: 'Full HTML', fn: () => code },
+        { label: 'Head Only', fn: () => { const m = code.match(/<head[\s\S]*?<\/head>/i); return m ? m[0] : 'No <head> found'; } },
+        { label: 'Body Only', fn: () => { const m = code.match(/<body[\s\S]*?<\/body>/i); return m ? m[0] : 'No <body> found'; } },
+      ];
 
-  if (!html) {
-    showError('All proxies failed — site is blocking external requests',
-      `This is common with Vercel / Next.js / Cloudflare-protected apps.<br><br>
-      <strong>Fix:</strong> Open the site in your browser → press <kbd style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px">Ctrl+U</kbd> → copy all → paste it in the input above<br><br>
-      <span style="opacity:0.35">${log.join('<br>')}</span>`
-    );
-    return;
-  }
+      tabs.forEach((t, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'tab' + (i === 0 ? ' active' : '');
+        btn.textContent = t.label;
+        btn.addEventListener('click', () => {
+          tabsEl.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          codeDisplay.textContent = t.fn();
+        });
+        tabsEl.appendChild(btn);
+      });
+    }
 
-  const host = (() => { try { return new URL(url).hostname.toUpperCase(); } catch(e) { return 'RESULT'; }})();
-  showOutput(html, host);
-}
+    // ── Display code ──
+    function displayCode(code, detectedUrl = null) {
+      currentCode = code;
+      codeDisplay.textContent = code;
+      setupTabs(code);
+      updateStats(code);
+      results.classList.add('visible');
+      hideStatus();
 
-// ─── Fetch raw file directly ──────────────────
-async function fetchRaw(url) {
-  showLoading('Fetching file...');
-  setGoDisabled(true);
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const code = await r.text();
-    showOutput(code, url.split('/').pop().toUpperCase() || 'FILE');
-  } catch(e) {
-    showError('Could not fetch file', e.message);
-  } finally { setGoDisabled(false); }
-}
-
-// ─── Gemini image analysis ────────────────────
-async function analyzeImage() {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_KEY_HERE') {
-    showError('API key not set', 'Open codepeek.html in VS Code and replace <code>YOUR_KEY_HERE</code> with your Gemini API key.');
-    return;
-  }
-
-  showLoading('Analyzing image with Gemini Vision AI...');
-  setGoDisabled(true);
-
-  const prompt = `You are a UI-to-code expert. Carefully analyze this screenshot or UI image.
-Identify every visible element: layout structure, sections, navigation, buttons, inputs, cards, colors, fonts, spacing, icons, and any text content.
-Then generate clean, complete, production-ready HTML + CSS + JavaScript that recreates this UI as accurately as possible.
-Use modern CSS (flexbox/grid), match the color scheme, typography, and layout precisely.
-Return ONLY the complete HTML code starting with <!DOCTYPE html>. No explanation, no markdown, no backticks.`;
-
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: uploadedImage.mimeType, data: uploadedImage.base64 } }
-            ]
-          }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
-        })
+      if (detectedUrl) {
+        detectedUrlText.textContent = detectedUrl;
+        detectedUrlEl.classList.add('visible');
+      } else {
+        detectedUrlEl.classList.remove('visible');
       }
-    );
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || 'HTTP ' + res.status);
+      // Refresh preview if open
+      if (showPreview) updatePreview();
     }
 
-    const data = await res.json();
-    let code = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // ── Analyze ──
+    analyzeBtn.addEventListener('click', analyze);
+    mainInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) analyze(); });
 
-    // Strip markdown fences if present
-    code = code.replace(/^```[\w]*\n?/m, '').replace(/```$/m, '').trim();
+    async function analyze() {
+      const input = mainInput.value.trim();
 
-    if (!code) throw new Error('Gemini returned empty response');
+      if (!imageBase64 && !input) {
+        showStatus('⚠ Paste a URL, code, or upload an image first.', 'error');
+        return;
+      }
 
-    showOutput(code, '🤖 AI GENERATED — ' + uploadedImage.name.toUpperCase());
-    clearImage();
+      analyzeBtn.disabled = true;
+      detectedUrlEl.classList.remove('visible');
 
-  } catch(e) {
-    showError('Gemini API error: ' + e.message,
-      'Make sure your API key is valid and you have access to gemini-3-flash-preview.');
-  } finally { setGoDisabled(false); }
-}
-// ─── Render output ────────────────────────────
-function showOutput(code, label) {
-  rawCode = code;
-  currentView = 'full';
+      // ── Code paste ──
+      if (!imageBase64 && input && !input.startsWith('http')) {
+        displayCode(input);
+        analyzeBtn.disabled = false;
+        return;
+      }
 
-  document.getElementById('emptyCard').style.display = 'none';
-  document.getElementById('statusArea').innerHTML = '';
-  document.getElementById('outputCard').style.display = 'block';
-  document.getElementById('outputLabel').textContent = label;
+      // ── URL only (no image) ──
+      if (!imageBase64 && input.startsWith('http')) {
+        showStatus('⏳ Fetching source code...', 'info');
+        try {
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'url', url: input })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          displayCode(data.code);
+        } catch (err) {
+          showStatus('✕ ' + err.message, 'error');
+        }
+        analyzeBtn.disabled = false;
+        return;
+      }
 
-  const isHTML = code.trim().startsWith('<');
-  buildTabs(isHTML
-    ? [{id:'full',label:'Full HTML'},{id:'head',label:'Head'},{id:'body',label:'Body'}]
-    : [{id:'full',label:'Source'}]
-  );
-  renderCode();
-  renderStats(code);
-}
+      // ── Image (+ optional URL) ──
+      if (imageBase64) {
+        showStatus('<span class="spinner"></span> Analyzing with Gemini Vision...', 'info');
+        statusMsg.innerHTML = '<span class="spinner"></span> Analyzing with Gemini Vision...';
+        try {
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'image',
+              imageBase64,
+              url: input.startsWith('http') ? input : null
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          displayCode(data.code, data.detectedUrl);
+        } catch (err) {
+          showStatus('✕ ' + err.message, 'error');
+        }
+        analyzeBtn.disabled = false;
+        return;
+      }
 
-function buildTabs(views) {
-  document.getElementById('tabsBar').innerHTML = views.map(v =>
-    `<button class="vtab ${v.id===currentView?'on':''}" onclick="switchView('${v.id}')">${v.label}</button>`
-  ).join('');
-}
+      analyzeBtn.disabled = false;
+    }
 
-function switchView(v) {
-  currentView = v;
-  document.querySelectorAll('.vtab').forEach(t =>
-    t.classList.toggle('on', t.getAttribute('onclick') === `switchView('${v}')`)
-  );
-  renderCode();
-}
+    // ── Preview ──
+    function updatePreview() {
+      const blob = new Blob([currentCode], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      previewFrame.src = url;
+    }
 
-function extractHead(h) { const m=h.match(/<head[\s\S]*?<\/head>/i); return m?m[0]:'<!-- No <head> found -->'; }
-function extractBody(h) { const m=h.match(/<body[\s\S]*?<\/body>/i); return m?m[0]:'<!-- No <body> found -->'; }
+    function updateLayout() {
+      previewPanel.style.display = showPreview ? '' : 'none';
+      editPanel.style.display = showEdit ? '' : 'none';
 
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      splitPanel.className = 'split-panel';
+      if (!showPreview && !showEdit) splitPanel.classList.add('no-preview');
+      else if (showPreview && showEdit) splitPanel.classList.add('with-edit');
+    }
 
-function highlight(line) {
-  return esc(line)
-    .replace(/(&lt;\/?)([\w:-]+)/g, '<span class="tag">$1$2</span>')
-    .replace(/\b(function|const|let|var|return|if|else|for|while|class|import|export|async|await|def|from|new)\b/g, '<span class="kw">$1</span>')
-    .replace(/\b(true|false|null|undefined|this)\b/g, '<span class="val">$1</span>')
-    .replace(/(&#39;[^&#]*&#39;|&quot;[^&]*&quot;)/g, '<span class="str">$1</span>')
-    .replace(/(\/\/.*$)/gm, '<span class="cmt">$1</span>');
-}
+    previewToggleBtn.addEventListener('click', () => {
+      showPreview = !showPreview;
+      updateLayout();
+      if (showPreview) updatePreview();
+      previewToggleBtn.textContent = showPreview ? '✕ Close Preview' : '👁 See how it looks';
+    });
 
-function renderCode() {
-  let code = rawCode;
-  if (currentView === 'head') code = extractHead(rawCode);
-  else if (currentView === 'body') code = extractBody(rawCode);
+    closePreview.addEventListener('click', () => {
+      showPreview = false;
+      updateLayout();
+      previewToggleBtn.textContent = '👁 See how it looks';
+    });
 
-  const lines = code.split('\n');
-  document.getElementById('codeView').innerHTML = lines.map((line, i) =>
-    `<div class="code-line"><span class="ln">${i+1}</span><span>${highlight(line) || '&nbsp;'}</span></div>`
-  ).join('');
-}
+    editToggleBtn.addEventListener('click', () => {
+      showEdit = !showEdit;
+      updateLayout();
+      editToggleBtn.textContent = showEdit ? '✕ Close Editor' : '✏ Edit with AI';
+    });
 
-function renderStats(code) {
-  const lines = code.split('\n').length;
-  const chars = code.length;
-  const size = (new Blob([code]).size / 1024).toFixed(1);
-  const fns = (code.match(/function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\(|def\s+\w+/g)||[]).length;
-  const el = document.getElementById('statsGrid');
-  el.style.display = 'grid';
-  el.innerHTML = `
-    <div class="stat-box"><div class="stat-label">Lines</div><div class="stat-value">${lines.toLocaleString()}</div></div>
-    <div class="stat-box"><div class="stat-label">Characters</div><div class="stat-value">${chars.toLocaleString()}</div></div>
-    <div class="stat-box"><div class="stat-label">Size</div><div class="stat-value">${size}kb</div></div>
-    <div class="stat-box"><div class="stat-label">Functions</div><div class="stat-value">${fns}</div></div>
-  `;
-}
+    closeEdit.addEventListener('click', () => {
+      showEdit = false;
+      updateLayout();
+      editToggleBtn.textContent = '✏ Edit with AI';
+    });
 
-// ─── Copy & Download ──────────────────────────
-function copyCode() {
-  let code = rawCode;
-  if (currentView === 'head') code = extractHead(rawCode);
-  else if (currentView === 'body') code = extractBody(rawCode);
-  navigator.clipboard.writeText(code).then(() => {
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = 'Copy Code', 1600);
-  });
-}
+    // ── AI Edit ──
+    editSend.addEventListener('click', sendEdit);
+    editInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEdit(); } });
 
-function downloadCode() {
-  let code = rawCode;
-  if (currentView === 'head') code = extractHead(rawCode);
-  else if (currentView === 'body') code = extractBody(rawCode);
-  const blob = new Blob([code], { type: 'text/html' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'codepeek-output.html';
-  a.click();
-}
+    async function sendEdit() {
+      const instruction = editInput.value.trim();
+      if (!instruction || !currentCode) return;
 
-// ─── UI helpers ───────────────────────────────
-function showLoading(msg) {
-  document.getElementById('emptyCard').style.display = 'none';
-  document.getElementById('outputCard').style.display = 'none';
-  document.getElementById('statsGrid').style.display = 'none';
-  document.getElementById('statusArea').innerHTML = `
-    <div class="output-card">
-      <div class="loader-wrap"><div class="spinner"></div>${msg}</div>
-    </div>`;
-}
+      // Clear empty state
+      const empty = editMessages.querySelector('.edit-empty');
+      if (empty) empty.remove();
 
-function showError(title, detail) {
-  document.getElementById('emptyCard').style.display = 'none';
-  document.getElementById('outputCard').style.display = 'none';
-  document.getElementById('statsGrid').style.display = 'none';
-  document.getElementById('statusArea').innerHTML = `
-    <div class="error-wrap">
-      <strong>⚠ ${title}</strong><br><br>${detail}
-    </div>`;
-}
+      // User message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'edit-msg user';
+      userMsg.textContent = instruction;
+      editMessages.appendChild(userMsg);
+      editInput.value = '';
+      editSend.disabled = true;
+      editMessages.scrollTop = editMessages.scrollHeight;
 
-function setGoDisabled(v) { document.getElementById('goBtn').disabled = v; }
-function timeout(ms) { return new Promise((_,r) => setTimeout(() => r(new Error('Timeout')), ms)); }
-function shakeInput() {
-  const el = document.getElementById('mainInput');
-  el.style.borderColor = 'var(--pink)';
-  el.style.boxShadow = '0 0 0 3px rgba(255,60,172,0.15)';
-  el.focus();
-  setTimeout(() => { el.style.borderColor=''; el.style.boxShadow=''; }, 1000);
-}
+      // AI thinking
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'edit-msg ai';
+      aiMsg.innerHTML = '<span class="spinner"></span> Editing code...';
+      editMessages.appendChild(aiMsg);
+      editMessages.scrollTop = editMessages.scrollHeight;
 
-// Enter key
-document.getElementById('mainInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') analyze();
-});
-</script>
+      try {
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'edit', currentCode, instruction })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        currentCode = data.code;
+        codeDisplay.textContent = data.code;
+        setupTabs(data.code);
+        updateStats(data.code);
+        if (showPreview) updatePreview();
+
+        aiMsg.innerHTML = '✓ Done! Code updated.';
+      } catch (err) {
+        aiMsg.innerHTML = '✕ Error: ' + err.message;
+      }
+
+      editSend.disabled = false;
+      editMessages.scrollTop = editMessages.scrollHeight;
+    }
+
+    // ── Copy ──
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(currentCode);
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    });
+
+    // ── Download ──
+    downloadBtn.addEventListener('click', () => {
+      const blob = new Blob([currentCode], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'codepeek-output.html';
+      a.click();
+    });
+  </script>
 </body>
-</html>
