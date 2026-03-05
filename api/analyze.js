@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 // Helpers
 function resolveUrl(base, relative) {
   try {
