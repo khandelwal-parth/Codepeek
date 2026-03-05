@@ -4,18 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CodePeek</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #08090f;
-      --surface: #0e0f1a;
-      --border: #1e2035;
-      --cyan: #00e5ff;
-      --pink: #ff2d9b;
-      --text: #e8eaf0;
-      --muted: #555878;
-      --success: #00ff88;
-      --purple: #a78bfa;
+      --bg: #fdf6ec;
+      --bg2: #f7ede0;
+      --surface: #ffffff;
+      --border: #e8d9c5;
+      --border2: #d4c4ad;
+      --brown: #2d1a0e;
+      --brown2: #5c3d26;
+      --orange: #e84d1c;
+      --orange2: #ff6b35;
+      --muted: #9c7c5e;
+      --code-bg: #fdf0e4;
+      --code-border: #e2cdb5;
+      --text: #2d1a0e;
+      --success: #2a7d4f;
+      --purple: #6b3fa0;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,407 +29,470 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Syne', sans-serif;
+      font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
+    /* Subtle warm texture blobs */
     body::before {
       content: '';
       position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .orb {
-      position: fixed;
+      width: 700px; height: 700px;
       border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
+      background: radial-gradient(circle, rgba(232,77,28,0.07) 0%, transparent 70%);
+      top: -200px; left: -200px;
+      pointer-events: none; z-index: 0;
     }
-    .orb-cyan { width: 400px; height: 400px; background: rgba(0,229,255,0.08); top: -100px; left: -100px; }
-    .orb-pink { width: 350px; height: 350px; background: rgba(255,45,155,0.08); bottom: -80px; right: -80px; }
+    body::after {
+      content: '';
+      position: fixed;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,77,28,0.05) 0%, transparent 70%);
+      bottom: -100px; right: -100px;
+      pointer-events: none; z-index: 0;
+    }
 
     .app { position: relative; z-index: 1; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(253,246,236,0.8);
+      backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .nav-logo {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--brown);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .nav-logo-icon {
+      color: var(--orange);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--brown2);
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--orange); }
 
     /* ── Hero ── */
     .hero {
       text-align: center;
-      padding: 50px 20px 32px;
+      padding: 72px 20px 48px;
     }
 
     .badge {
-      display: inline-block;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1.5px solid var(--border2);
+      border-radius: 4px;
+      padding: 5px 16px;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
       color: var(--muted);
-      margin-bottom: 20px;
-      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 28px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: var(--surface);
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(42,125,79,0.5);
     }
 
     .logo {
-      font-size: clamp(2.8rem, 7vw, 5rem);
-      font-weight: 800;
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(3.5rem, 9vw, 6.5rem);
+      font-weight: 400;
       line-height: 1;
-      margin-bottom: 12px;
+      margin-bottom: 20px;
+      color: var(--brown);
+      letter-spacing: -2px;
     }
 
-    .logo span {
-      background: linear-gradient(135deg, var(--cyan), var(--pink));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .logo em {
+      font-style: italic;
+      color: var(--orange);
     }
 
     .subtitle {
       color: var(--muted);
-      font-size: 0.9rem;
-      max-width: 500px;
-      margin: 0 auto 32px;
-      line-height: 1.6;
+      font-size: 1rem;
+      max-width: 520px;
+      margin: 0 auto 48px;
+      line-height: 1.65;
+      font-weight: 400;
     }
 
-    /* ── Input card ── */
+    /* ── Main card ── */
     .input-card {
-      max-width: 780px;
+      max-width: 820px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 24px;
     }
 
     .input-box {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px 20px;
+      border: 2px solid var(--brown);
+      border-radius: 12px;
+      padding: 0;
+      box-shadow: 6px 6px 0 var(--brown);
+      overflow: hidden;
     }
 
-    .input-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+    .input-main-area {
+      padding: 20px 20px 0;
     }
 
     .main-input {
-      flex: 1;
-      background: transparent;
-      border: none;
+      width: 100%;
+      background: var(--code-bg);
+      border: 1.5px solid var(--code-border);
+      border-radius: 8px;
       outline: none;
-      color: var(--text);
+      color: var(--brown);
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.88rem;
-      padding: 8px 0;
+      padding: 14px 16px;
+      min-height: 100px;
+      resize: none;
+      line-height: 1.6;
+      transition: border-color 0.2s;
     }
 
     .main-input::placeholder { color: var(--muted); }
-
-    .img-btn {
-      background: var(--border);
-      border: 1px solid #2a2d4a;
-      border-radius: 10px;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 9px 12px;
-      font-size: 1rem;
-      transition: all 0.2s;
-    }
-
-    .img-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-    .img-btn.has-image { border-color: var(--success); color: var(--success); }
-
-    .analyze-btn {
-      background: linear-gradient(135deg, var(--cyan), #0099bb);
-      border: none;
-      border-radius: 10px;
-      color: #000;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 0.88rem;
-      padding: 9px 20px;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,229,255,0.3); }
-    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .main-input:focus { border-color: var(--orange); }
 
     .image-preview {
       display: none;
       align-items: center;
       gap: 10px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
+      margin: 12px 0 0;
+      padding: 10px 14px;
+      background: var(--code-bg);
+      border: 1.5px solid var(--code-border);
+      border-radius: 8px;
     }
-
     .image-preview.visible { display: flex; }
 
-    .img-thumb {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      object-fit: cover;
-      border: 1px solid var(--border);
-    }
-
+    .img-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border2); }
     .img-info { flex: 1; }
-    .img-name { font-size: 0.82rem; color: var(--text); }
-    .img-status { font-size: 0.72rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .img-name { font-size: 0.82rem; color: var(--brown); font-weight: 500; }
+    .img-status { font-size: 0.7rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .img-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 4px; }
+    .img-remove:hover { color: var(--orange); }
 
-    .img-remove {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 4px;
-    }
-    .img-remove:hover { color: var(--pink); }
-
-    .hint {
-      margin-top: 10px;
-      font-size: 0.7rem;
-      color: var(--muted);
+    .detected-url {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 0;
+      padding: 8px 12px;
+      background: rgba(232,77,28,0.06);
+      border: 1px solid rgba(232,77,28,0.2);
+      border-radius: 6px;
+      font-size: 0.72rem;
       font-family: 'JetBrains Mono', monospace;
+      color: var(--orange);
+    }
+    .detected-url.visible { display: flex; }
+
+    /* Bottom toolbar of card */
+    .input-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .feature-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .feature-tag svg, .feature-tag span.icon {
+      opacity: 0.6;
+      font-size: 0.8rem;
+    }
+
+    .img-btn {
+      background: var(--bg2);
+      border: 1.5px solid var(--border2);
+      border-radius: 8px;
+      color: var(--brown2);
+      cursor: pointer;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .img-btn:hover { border-color: var(--orange); color: var(--orange); background: rgba(232,77,28,0.04); }
+    .img-btn.has-image { border-color: var(--success); color: var(--success); }
+
+    .analyze-btn {
+      background: var(--orange);
+      border: 2px solid var(--brown);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.92rem;
+      padding: 10px 26px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 3px 3px 0 var(--brown);
+    }
+    .analyze-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--brown); }
+    .analyze-btn:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--brown); }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--brown); }
+
+    .free-note {
       text-align: center;
+      margin-top: 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
     }
 
     /* ── Status ── */
-    .status-bar {
-      max-width: 780px;
-      margin: 14px auto 0;
-      padding: 0 20px;
-      display: none;
-    }
+    .status-bar { max-width: 820px; margin: 16px auto 0; padding: 0 24px; display: none; }
     .status-bar.visible { display: block; }
-
     .status-msg {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1.5px solid var(--border2);
+      border-radius: 8px;
       padding: 11px 16px;
       font-size: 0.8rem;
       font-family: 'JetBrains Mono', monospace;
       color: var(--muted);
     }
-    .status-msg.error { border-color: var(--pink); color: #ff6bb3; }
-    .status-msg.info { border-color: var(--cyan); color: var(--cyan); }
-    .status-msg.success { border-color: var(--success); color: var(--success); }
+    .status-msg.error { border-color: #c0392b; color: #c0392b; background: #fff5f5; }
+    .status-msg.info  { border-color: var(--orange); color: var(--orange2); background: rgba(232,77,28,0.04); }
+    .status-msg.success { border-color: var(--success); color: var(--success); background: rgba(42,125,79,0.04); }
 
     /* ── Results ── */
-    .results {
-      margin: 24px 0 0;
-      padding: 0 20px 40px;
-      display: none;
-    }
+    .results { margin: 28px 0 0; padding: 0 24px 48px; display: none; }
     .results.visible { display: block; }
 
-    /* Top bar */
     .results-topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .stats {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .stat {
-      font-size: 0.72rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--muted);
-    }
-    .stat strong { color: var(--cyan); }
+    .stats { display: flex; gap: 16px; flex-wrap: wrap; }
+    .stat { font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+    .stat strong { color: var(--orange); }
 
     .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .action-btn {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      font-size: 0.78rem;
-      padding: 6px 14px;
+      border: 1.5px solid var(--border2);
+      border-radius: 7px;
+      color: var(--brown2);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 7px 14px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
       display: flex;
       align-items: center;
       gap: 5px;
     }
-    .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .action-btn:hover { border-color: var(--orange); color: var(--orange); }
 
     .preview-btn {
-      background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(255,45,155,0.12));
-      border-color: var(--cyan);
-      color: var(--cyan);
-      font-weight: 700;
+      background: rgba(232,77,28,0.06);
+      border-color: rgba(232,77,28,0.4);
+      color: var(--orange);
+      font-weight: 600;
     }
-    .preview-btn:hover { background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(255,45,155,0.22)); color: var(--cyan); }
+    .preview-btn:hover { background: rgba(232,77,28,0.12); }
 
     .edit-btn {
-      background: rgba(167,139,250,0.1);
-      border-color: var(--purple);
+      background: rgba(107,63,160,0.06);
+      border-color: rgba(107,63,160,0.35);
       color: var(--purple);
-      font-weight: 700;
+      font-weight: 600;
     }
-    .edit-btn:hover { background: rgba(167,139,250,0.2); color: var(--purple); }
+    .edit-btn:hover { background: rgba(107,63,160,0.12); }
 
-    /* ── Main workspace ── */
+    /* ── Workspace ── */
     .workspace {
       display: flex;
       gap: 14px;
-      height: calc(100vh - 340px);
+      height: calc(100vh - 360px);
       min-height: 500px;
+      align-items: stretch;
     }
 
-    /* Code panel — fixed slim width */
-    .code-panel {
+    /* Left column: code panel + editor stacked */
+    .left-col {
       width: 340px;
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .left-col.full-width { width: 100% !important; }
+
+    .code-panel {
+      flex: 1;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      border: 1.5px solid var(--border2);
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      transition: width 0.3s ease;
-    }
-
-    .code-panel.full-width {
-      width: 100%;
+      box-shadow: 4px 4px 0 var(--border2);
+      min-height: 0;
     }
 
     .panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,0.02);
+      padding: 11px 16px;
+      border-bottom: 1.5px solid var(--border);
+      background: var(--bg2);
       flex-shrink: 0;
     }
 
     .panel-title {
-      font-size: 0.72rem;
-      color: var(--muted);
+      font-size: 0.75rem;
+      color: var(--brown2);
       font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
       display: flex;
       align-items: center;
       gap: 7px;
     }
 
-    .panel-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--cyan);
-    }
+    .panel-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); }
 
-    .tabs {
-      display: flex;
-      gap: 3px;
-    }
-
+    .tabs { display: flex; gap: 3px; }
     .tab {
       background: none;
-      border: 1px solid transparent;
+      border: 1.5px solid transparent;
       border-radius: 5px;
       color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.65rem;
-      padding: 3px 8px;
+      padding: 3px 9px;
       cursor: pointer;
       transition: all 0.15s;
+      font-weight: 500;
     }
-    .tab.active { border-color: var(--border); color: var(--text); background: var(--border); }
-    .tab:hover:not(.active) { color: var(--text); }
+    .tab.active { border-color: var(--border2); color: var(--brown); background: var(--bg); }
+    .tab:hover:not(.active) { color: var(--brown); }
 
-    .code-scroll {
-      flex: 1;
-      overflow: auto;
-      padding: 14px;
-    }
-
+    .code-scroll { flex: 1; overflow: auto; padding: 16px; background: var(--code-bg); }
     .code-scroll::-webkit-scrollbar { width: 4px; }
-    .code-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .code-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
     pre {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.75rem;
-      line-height: 1.65;
+      line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-all;
-      color: #a8b0d0;
+      color: var(--brown2);
     }
 
-    /* ── Right side (preview + edit stacked) ── */
+    /* ── Right side — just the preview, full height always ── */
     .right-side {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      min-width: 0;
     }
 
-    /* Preview panel — takes most space */
     .preview-panel {
       flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border2);
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      min-height: 0;
+      box-shadow: 4px 4px 0 var(--border2);
     }
 
-    /* Fake browser chrome */
     .browser-bar {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(0,0,0,0.3);
+      border-bottom: 1.5px solid var(--border);
+      background: var(--bg2);
       flex-shrink: 0;
     }
 
-    .browser-dots {
-      display: flex;
-      gap: 6px;
-    }
-
-    .browser-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .bd-red { background: #ff5f56; }
-    .bd-yellow { background: #ffbd2e; }
-    .bd-green { background: #27c93f; }
+    .browser-dots { display: flex; gap: 6px; }
+    .browser-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .bd-red { background: #ff5f56; } .bd-yellow { background: #ffbd2e; } .bd-green { background: #27c93f; }
 
     .browser-url {
       flex: 1;
-      background: rgba(255,255,255,0.05);
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 5px;
       padding: 4px 10px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem;
@@ -431,106 +500,71 @@
     }
 
     .browser-close {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 0.75rem;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
+      background: none; border: none; color: var(--muted); font-size: 0.75rem; cursor: pointer;
+      padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace;
     }
-    .browser-close:hover { color: var(--pink); }
+    .browser-close:hover { color: var(--orange); }
 
-    .preview-frame {
-      flex: 1;
-      border: none;
-      background: white;
-      width: 100%;
-    }
+    .preview-frame { flex: 1; border: none; background: white; width: 100%; }
 
-    /* ── Edit panel ── */
+    /* ── Edit panel — sits below code panel in left col ── */
     .edit-panel {
-      height: 260px;
+      height: 220px;
       flex-shrink: 0;
       background: var(--surface);
-      border: 1px solid rgba(167,139,250,0.3);
-      border-radius: 16px;
+      border: 1.5px solid rgba(107,63,160,0.3);
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-shadow: 4px 4px 0 rgba(107,63,160,0.15);
     }
 
-    .edit-panel .panel-header {
-      border-bottom-color: rgba(167,139,250,0.2);
-    }
-
-    .edit-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
+    .edit-messages { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
     .edit-messages::-webkit-scrollbar { width: 4px; }
-    .edit-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .edit-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
     .edit-msg {
-      padding: 8px 12px;
-      border-radius: 10px;
+      padding: 9px 13px;
+      border-radius: 8px;
       font-size: 0.78rem;
       line-height: 1.5;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'DM Sans', sans-serif;
       max-width: 85%;
     }
-
     .edit-msg.user {
-      background: rgba(0,229,255,0.08);
-      border: 1px solid rgba(0,229,255,0.2);
-      color: var(--cyan);
+      background: rgba(232,77,28,0.07);
+      border: 1.5px solid rgba(232,77,28,0.2);
+      color: var(--orange);
       align-self: flex-end;
     }
-
     .edit-msg.ai {
-      background: rgba(167,139,250,0.08);
-      border: 1px solid rgba(167,139,250,0.2);
+      background: rgba(107,63,160,0.07);
+      border: 1.5px solid rgba(107,63,160,0.2);
       color: var(--purple);
       align-self: flex-start;
     }
 
     .edit-empty {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-family: 'JetBrains Mono', monospace;
-      gap: 8px;
-      padding: 10px;
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 0.78rem; font-family: 'DM Sans', sans-serif; gap: 8px; padding: 10px;
     }
 
-    /* Edit input row at bottom */
     .edit-input-row {
       padding: 10px 12px;
-      border-top: 1px solid rgba(167,139,250,0.15);
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
-      flex-shrink: 0;
-      background: rgba(0,0,0,0.2);
+      border-top: 1.5px solid rgba(107,63,160,0.15);
+      display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+      background: var(--bg2);
     }
 
     .edit-input {
       flex: 1;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(167,139,250,0.25);
-      border-radius: 10px;
-      color: var(--text);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border2);
+      border-radius: 8px;
+      color: var(--brown);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
       padding: 10px 14px;
       outline: none;
       resize: none;
@@ -538,127 +572,118 @@
       line-height: 1.4;
       transition: border-color 0.2s, height 0.2s;
     }
-
     .edit-input::placeholder { color: var(--muted); }
-    .edit-input:focus {
-      border-color: var(--purple);
-      height: 70px;
-    }
+    .edit-input:focus { border-color: var(--purple); height: 70px; }
 
     .edit-send {
-      background: linear-gradient(135deg, var(--purple), #7c3aed);
-      border: none;
-      border-radius: 10px;
+      background: var(--purple);
+      border: 2px solid var(--brown);
+      border-radius: 8px;
       color: #fff;
       font-weight: 700;
       font-size: 1rem;
-      width: 42px;
-      height: 42px;
+      width: 42px; height: 42px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 2px 2px 0 var(--brown);
     }
-
-    .edit-send:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(167,139,250,0.4); }
+    .edit-send:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--brown); }
     .edit-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
     /* ── Spinner ── */
     .spinner {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(0,229,255,0.2);
-      border-top-color: var(--cyan);
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid rgba(232,77,28,0.2);
+      border-top-color: var(--orange);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+      vertical-align: middle; margin-right: 6px;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Toast ── */
     .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
+      position: fixed; bottom: 24px; right: 24px;
       background: var(--surface);
-      border: 1px solid var(--success);
+      border: 1.5px solid var(--success);
       color: var(--success);
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 9px 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
       z-index: 1000;
-      transform: translateY(80px);
-      opacity: 0;
+      transform: translateY(80px); opacity: 0;
       transition: all 0.3s ease;
+      box-shadow: 2px 2px 0 rgba(42,125,79,0.2);
     }
     .toast.show { transform: translateY(0); opacity: 1; }
 
-    .detected-url {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      padding: 7px 12px;
-      background: rgba(0,229,255,0.05);
-      border: 1px solid rgba(0,229,255,0.2);
-      border-radius: 8px;
-      font-size: 0.72rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--cyan);
-    }
-    .detected-url.visible { display: flex; }
-
     @media (max-width: 900px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
       .workspace { flex-direction: column; height: auto; }
-      .code-panel { width: 100% !important; height: 400px; }
-      .right-side { min-height: 500px; }
-      .edit-panel { height: 240px; }
+      .left-col { width: 100% !important; }
+      .code-panel { height: 400px; }
+      .right-side { min-height: 400px; }
     }
   </style>
 </head>
 <body>
-  <div class="orb orb-cyan"></div>
-  <div class="orb orb-pink"></div>
-
   <div class="app">
+    <!-- Nav -->
+    <nav>
+      <div class="nav-logo">
+        <span class="nav-logo-icon">&lt;/&gt;</span>
+        CodePeek
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" onclick="scrollToSection('features', event)">Features</a></li>
+        <li><a href="#" onclick="scrollToSection('docs', event)">Documentation</a></li>
+      </ul>
+    </nav>
+
     <!-- Hero -->
     <div class="hero">
-      <div class="badge">● CODE INSPECTOR</div>
-      <h1 class="logo">Code<span>Peek</span></h1>
-      <p class="subtitle">Paste a URL, drop some code, or upload a screenshot — get the source instantly.</p>
+      <div class="badge"><span class="badge-dot"></span> Code Inspector</div>
+      <h1 class="logo">Code<em>Peek</em></h1>
+      <p class="subtitle">Paste a URL, drop a code file, or paste code content — get thorough analysis instantly.</p>
     </div>
 
     <!-- Input -->
     <div class="input-card">
       <div class="input-box">
-        <div class="input-row">
-          <input type="text" class="main-input" id="mainInput" placeholder="Paste a URL, GitHub raw link, or any code..." />
-          <button class="img-btn" id="imgBtn" title="Upload screenshot">📷</button>
-          <button class="analyze-btn" id="analyzeBtn">Analyze →</button>
-        </div>
+        <div class="input-main-area">
+          <textarea class="main-input" id="mainInput" rows="3" placeholder="Paste a URL, GitHub raw link, or any code..."></textarea>
 
-        <div class="image-preview" id="imagePreview">
-          <img class="img-thumb" id="imgThumb" src="" alt="" />
-          <div class="img-info">
-            <div class="img-name" id="imgName"></div>
-            <div class="img-status">Ready for AI analysis · Gemini Vision</div>
+          <div class="image-preview" id="imagePreview">
+            <img class="img-thumb" id="imgThumb" src="" alt="" />
+            <div class="img-info">
+              <div class="img-name" id="imgName"></div>
+              <div class="img-status">Ready for AI analysis · Gemini Vision</div>
+            </div>
+            <button class="img-remove" id="imgRemove">✕</button>
           </div>
-          <button class="img-remove" id="imgRemove">✕</button>
+
+          <div class="detected-url" id="detectedUrl">
+            <span>🔍 AI detected URL:</span>
+            <span id="detectedUrlText"></span>
+          </div>
         </div>
 
-        <div class="detected-url" id="detectedUrl">
-          <span>🔍 AI detected URL:</span>
-          <span id="detectedUrlText"></span>
+        <div class="input-toolbar">
+          <div class="toolbar-left">
+            <button class="img-btn" id="imgBtn">📷 Screenshot</button>
+            <div class="feature-tag"><span class="icon">🔗</span> Raw links</div>
+            <div class="feature-tag"><span class="icon">&#60;/&#62;</span> Pasted code</div>
+            <div class="feature-tag"><span class="icon">🛡</span> Screenshots</div>
+          </div>
+          <button class="analyze-btn" id="analyzeBtn">Analyze &rarr;</button>
         </div>
-
-        <div class="hint">⚡ Auto-detects URLs, raw files, pasted code, or screenshots — no mode switching needed.</div>
       </div>
+      <p class="free-note">No credit card required &bull; Free tier available</p>
     </div>
 
     <!-- Status -->
@@ -668,7 +693,6 @@
 
     <!-- Results -->
     <div class="results" id="results">
-      <!-- Top bar -->
       <div class="results-topbar">
         <div class="stats" id="stats"></div>
         <div class="results-actions">
@@ -679,39 +703,24 @@
         </div>
       </div>
 
-      <!-- Workspace -->
       <div class="workspace" id="workspace">
-        <!-- Code panel -->
-        <div class="code-panel full-width" id="codePanel">
-          <div class="panel-header">
-            <div class="panel-title">
-              <div class="panel-dot"></div>
-              <span id="codeLabel">source.html</span>
-            </div>
-            <div class="tabs" id="tabs"></div>
-          </div>
-          <div class="code-scroll">
-            <pre id="codeDisplay"></pre>
-          </div>
-        </div>
 
-        <!-- Right side — shown when preview/edit active -->
-        <div class="right-side" id="rightSide" style="display:none">
-          <!-- Preview panel -->
-          <div class="preview-panel" id="previewPanel" style="display:none">
-            <div class="browser-bar">
-              <div class="browser-dots">
-                <div class="browser-dot bd-red"></div>
-                <div class="browser-dot bd-yellow"></div>
-                <div class="browser-dot bd-green"></div>
+        <!-- Left column: code panel always, editor below when open -->
+        <div class="left-col full-width" id="leftCol">
+          <div class="code-panel" id="codePanel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <div class="panel-dot"></div>
+                <span id="codeLabel">source.html</span>
               </div>
-              <div class="browser-url">preview — codepeek live render</div>
-              <button class="browser-close" id="closePreview">✕ close</button>
+              <div class="tabs" id="tabs"></div>
             </div>
-            <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts"></iframe>
+            <div class="code-scroll">
+              <pre id="codeDisplay"></pre>
+            </div>
           </div>
 
-          <!-- Edit panel -->
+          <!-- Editor sits below code panel, left col only -->
           <div class="edit-panel" id="editPanel" style="display:none">
             <div class="panel-header">
               <div class="panel-title">
@@ -724,19 +733,135 @@
               <div class="edit-empty" id="editEmpty">✏️ &nbsp; Describe a change — AI will update the code instantly</div>
             </div>
             <div class="edit-input-row">
-              <textarea class="edit-input" id="editInput" placeholder="e.g. make the background dark blue, add a sticky navbar, change font to serif..."></textarea>
+              <textarea class="edit-input" id="editInput" placeholder="e.g. make the background dark blue, add a sticky navbar..."></textarea>
               <button class="edit-send" id="editSend" title="Send">↑</button>
             </div>
           </div>
         </div>
+
+        <!-- Right side: preview only, full height, never resizes -->
+        <div class="right-side" id="rightSide" style="display:none">
+          <div class="preview-panel" id="previewPanel">
+            <div class="browser-bar">
+              <div class="browser-dots">
+                <div class="browser-dot bd-red"></div>
+                <div class="browser-dot bd-yellow"></div>
+                <div class="browser-dot bd-green"></div>
+              </div>
+              <div class="browser-url">preview — codepeek live render</div>
+              <button class="browser-close" id="closePreview">✕ close</button>
+            </div>
+            <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts"></iframe>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
+
+  <!-- Features Section -->
+  <section id="features" style="max-width:820px;margin:80px auto 0;padding:0 24px 80px;">
+    <div style="text-align:center;margin-bottom:48px;">
+      <div class="badge"><span class="badge-dot"></span> Features</div>
+      <h2 style="font-family:'Instrument Serif',serif;font-size:clamp(2rem,5vw,3.2rem);color:var(--brown);letter-spacing:-1px;margin-top:16px;">Everything you need to<br><em style="color:var(--orange);font-style:italic;">inspect any website</em></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:16px;">
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:24px;box-shadow:4px 4px 0 var(--border2);grid-column:span 2;">
+        <div style="font-size:1.6rem;margin-bottom:12px;">🔗</div>
+        <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">URL Fetching</div>
+        <div style="color:var(--muted);font-size:0.82rem;line-height:1.6;">Paste any public URL and instantly get the full HTML source code returned from the server.</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:24px;box-shadow:4px 4px 0 var(--border2);grid-column:span 2;">
+        <div style="font-size:1.6rem;margin-bottom:12px;">📷</div>
+        <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">Gemini Vision</div>
+        <div style="color:var(--muted);font-size:0.82rem;line-height:1.6;">Upload or paste a screenshot — Gemini AI analyzes it and reconstructs the full HTML &amp; CSS code.</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:24px;box-shadow:4px 4px 0 var(--border2);grid-column:span 2;">
+        <div style="font-size:1.6rem;margin-bottom:12px;">✏️</div>
+        <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">AI Code Editor</div>
+        <div style="color:var(--muted);font-size:0.82rem;line-height:1.6;">Describe changes in plain English — the AI editor rewrites the code for you instantly.</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:24px;box-shadow:4px 4px 0 var(--border2);grid-column:span 3;">
+        <div style="font-size:1.6rem;margin-bottom:12px;">👁</div>
+        <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">Live Preview</div>
+        <div style="color:var(--muted);font-size:0.82rem;line-height:1.6;">See your fetched or edited code render in real time inside a built-in browser preview panel.</div>
+      </div>
+
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:24px;box-shadow:4px 4px 0 var(--border2);grid-column:span 3;">
+        <div style="font-size:1.6rem;margin-bottom:12px;">⬇️</div>
+        <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">Copy &amp; Download</div>
+        <div style="color:var(--muted);font-size:0.82rem;line-height:1.6;">One-click copy or download the output as a ready-to-use HTML file. Free, no account needed.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation Section -->
+  <section id="docs" style="max-width:820px;margin:0 auto;padding:0 24px 100px;">
+    <div style="text-align:center;margin-bottom:48px;">
+      <div class="badge"><span class="badge-dot"></span> Documentation</div>
+      <h2 style="font-family:'Instrument Serif',serif;font-size:clamp(2rem,5vw,3.2rem);color:var(--brown);letter-spacing:-1px;margin-top:16px;">How to use <em style="color:var(--orange);font-style:italic;">CodePeek</em></h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:22px 26px;box-shadow:4px 4px 0 var(--border2);display:flex;gap:20px;align-items:flex-start;">
+        <div style="background:var(--orange);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.85rem;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid var(--brown);">1</div>
+        <div>
+          <div style="font-weight:600;color:var(--brown);margin-bottom:6px;">Paste a URL or upload a screenshot</div>
+          <div style="color:var(--muted);font-size:0.84rem;line-height:1.6;">Type or paste any public website URL into the search bar, or click the 📷 button to upload a screenshot. You can also Ctrl+V a screenshot directly from your clipboard.</div>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:22px 26px;box-shadow:4px 4px 0 var(--border2);display:flex;gap:20px;align-items:flex-start;">
+        <div style="background:var(--orange);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.85rem;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid var(--brown);">2</div>
+        <div>
+          <div style="font-weight:600;color:var(--brown);margin-bottom:6px;">Hit Analyze</div>
+          <div style="color:var(--muted);font-size:0.84rem;line-height:1.6;">Click the Analyze button. CodePeek auto-detects whether you gave it a URL, raw code, or a screenshot and handles it accordingly — no mode switching needed.</div>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:22px 26px;box-shadow:4px 4px 0 var(--border2);display:flex;gap:20px;align-items:flex-start;">
+        <div style="background:var(--orange);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.85rem;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid var(--brown);">3</div>
+        <div>
+          <div style="font-weight:600;color:var(--brown);margin-bottom:6px;">Inspect, edit, or preview the code</div>
+          <div style="color:var(--muted);font-size:0.84rem;line-height:1.6;">The full source code appears with syntax highlighting. Use the AI Editor to make changes in plain English, toggle the Live Preview to see it render, or just copy/download the code.</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="toast" id="toast">✓ Copied to clipboard</div>
   <input type="file" id="fileInput" accept="image/*" style="display:none" />
 
   <script>
+    // Smooth scroll with ripple effect on nav links
+    function scrollToSection(id, e) {
+      e.preventDefault();
+      const link = e.target;
+
+      // Ripple animation on the link
+      link.style.transition = 'none';
+      link.style.color = 'var(--orange)';
+      link.style.transform = 'scale(0.92)';
+      setTimeout(() => {
+        link.style.transition = 'color 0.3s, transform 0.4s';
+        link.style.transform = 'scale(1)';
+      }, 120);
+      setTimeout(() => { link.style.color = ''; }, 600);
+
+      const target = document.getElementById(id);
+      if (!target) return;
+      const offset = 80;
+      const top = target.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+
+      // Flash highlight on the section
+      target.style.transition = 'none';
+      target.style.outline = '2px solid rgba(232,77,28,0.4)';
+      target.style.borderRadius = '12px';
+      setTimeout(() => {
+        target.style.transition = 'outline 0.8s ease, border-radius 0.8s ease';
+        target.style.outline = '2px solid transparent';
+      }, 400);
+      setTimeout(() => { target.style.outline = ''; target.style.borderRadius = ''; }, 1200);
+    }
+
     let currentCode = '';
     let imageBase64 = null;
     let showPreview = false;
@@ -762,6 +887,7 @@
     const previewToggleBtn = $('previewToggleBtn');
     const editToggleBtn = $('editToggleBtn');
     const codePanel = $('codePanel');
+    const leftCol = $('leftCol');
     const rightSide = $('rightSide');
     const previewPanel = $('previewPanel');
     const previewFrame = $('previewFrame');
@@ -776,7 +902,6 @@
     const tabsEl = $('tabs');
     const toast = $('toast');
 
-    // ── Image upload ──
     imgBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', e => {
       const file = e.target.files[0];
@@ -793,6 +918,28 @@
       reader.readAsDataURL(file);
     });
 
+    // Ctrl+V paste image directly into textarea
+    mainInput.addEventListener('paste', e => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = ev => {
+            imageBase64 = ev.target.result.split(',')[1];
+            imgThumb.src = ev.target.result;
+            imgName.textContent = 'Pasted image';
+            imagePreview.classList.add('visible');
+            imgBtn.classList.add('has-image');
+            mainInput.placeholder = 'Optional: paste URL to help AI reconstruct better...';
+          };
+          reader.readAsDataURL(file);
+          break;
+        }
+      }
+    });
+
     imgRemove.addEventListener('click', () => {
       imageBase64 = null;
       imagePreview.classList.remove('visible');
@@ -801,7 +948,6 @@
       fileInput.value = '';
     });
 
-    // ── Status ──
     function showStatus(msg, type = '') {
       statusMsg.innerHTML = msg;
       statusMsg.className = 'status-msg ' + type;
@@ -809,7 +955,6 @@
     }
     function hideStatus() { statusBar.classList.remove('visible'); }
 
-    // ── Stats ──
     function updateStats(code) {
       const lines = code.split('\n').length;
       const chars = code.length;
@@ -823,18 +968,15 @@
       `;
     }
 
-    // ── Tabs ──
     function setupTabs(code) {
       tabsEl.innerHTML = '';
       const isHTML = code.trim().toLowerCase().startsWith('<!doctype') || code.trim().toLowerCase().startsWith('<html');
       if (!isHTML) return;
-
       const tabDefs = [
         { label: 'Full HTML', fn: () => code },
         { label: 'Head', fn: () => { const m = code.match(/<head[\s\S]*?<\/head>/i); return m ? m[0] : 'No <head> found'; } },
         { label: 'Body', fn: () => { const m = code.match(/<body[\s\S]*?<\/body>/i); return m ? m[0] : 'No <body> found'; } },
       ];
-
       tabDefs.forEach((t, i) => {
         const btn = document.createElement('button');
         btn.className = 'tab' + (i === 0 ? ' active' : '');
@@ -848,7 +990,6 @@
       });
     }
 
-    // ── Display code ──
     function displayCode(code, detectedUrl = null) {
       currentCode = code;
       codeDisplay.textContent = code;
@@ -856,41 +997,24 @@
       updateStats(code);
       results.classList.add('visible');
       hideStatus();
-
-      if (detectedUrl) {
-        detectedUrlText.textContent = detectedUrl;
-        detectedUrlEl.classList.add('visible');
-      } else {
-        detectedUrlEl.classList.remove('visible');
-      }
-
+      if (detectedUrl) { detectedUrlText.textContent = detectedUrl; detectedUrlEl.classList.add('visible'); }
+      else { detectedUrlEl.classList.remove('visible'); }
       if (showPreview) updatePreview();
     }
 
-    // ── Layout update ──
     function updateLayout() {
-      const anyRight = showPreview || showEdit;
-
-      if (anyRight) {
-        codePanel.classList.remove('full-width');
+      // Right side shows only when preview is open
+      if (showPreview) {
         rightSide.style.display = 'flex';
+        leftCol.classList.remove('full-width');
       } else {
-        codePanel.classList.add('full-width');
         rightSide.style.display = 'none';
+        leftCol.classList.add('full-width');
       }
-
-      previewPanel.style.display = showPreview ? 'flex' : 'none';
+      // Editor opens below code panel in left col — never affects preview
       editPanel.style.display = showEdit ? 'flex' : 'none';
-
-      // If preview open, make it grow; if only edit open, preview takes no space
-      if (showPreview && !showEdit) {
-        previewPanel.style.flex = '1';
-      } else if (showPreview && showEdit) {
-        previewPanel.style.flex = '1';
-      }
     }
 
-    // ── Preview ──
     function updatePreview() {
       const oldUrl = previewFrame.src;
       if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
@@ -903,57 +1027,43 @@
       updateLayout();
       if (showPreview) updatePreview();
       previewToggleBtn.textContent = showPreview ? '✕ Close Preview' : '👁 See how it looks';
-      previewToggleBtn.style.borderColor = showPreview ? 'var(--pink)' : '';
     });
 
     closePreview.addEventListener('click', () => {
-      showPreview = false;
-      updateLayout();
+      showPreview = false; updateLayout();
       previewToggleBtn.textContent = '👁 See how it looks';
-      previewToggleBtn.style.borderColor = '';
     });
 
-    // ── Edit panel ──
     editToggleBtn.addEventListener('click', () => {
-      showEdit = !showEdit;
-      updateLayout();
+      showEdit = !showEdit; updateLayout();
       editToggleBtn.textContent = showEdit ? '✕ Close Editor' : '✏ Edit with AI';
     });
 
     closeEdit.addEventListener('click', () => {
-      showEdit = false;
-      updateLayout();
+      showEdit = false; updateLayout();
       editToggleBtn.textContent = '✏ Edit with AI';
     });
 
-    // ── AI Edit ──
     editSend.addEventListener('click', sendEdit);
-    editInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEdit(); }
-    });
+    editInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEdit(); } });
 
     async function sendEdit() {
       const instruction = editInput.value.trim();
       if (!instruction || !currentCode) return;
-
       const emptyEl = $('editEmpty');
       if (emptyEl) emptyEl.remove();
-
       const userMsg = document.createElement('div');
       userMsg.className = 'edit-msg user';
       userMsg.textContent = instruction;
       editMessages.appendChild(userMsg);
       editInput.value = '';
-      editInput.style.height = '42px';
       editSend.disabled = true;
       editMessages.scrollTop = editMessages.scrollHeight;
-
       const aiMsg = document.createElement('div');
       aiMsg.className = 'edit-msg ai';
       aiMsg.innerHTML = '<span class="spinner"></span> Editing...';
       editMessages.appendChild(aiMsg);
       editMessages.scrollTop = editMessages.scrollHeight;
-
       try {
         const res = await fetch('/api/analyze', {
           method: 'POST',
@@ -962,94 +1072,59 @@
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-
         currentCode = data.code;
         codeDisplay.textContent = data.code;
         setupTabs(data.code);
         updateStats(data.code);
         if (showPreview) updatePreview();
-
         aiMsg.innerHTML = '✓ Done! Code updated.';
       } catch (err) {
         aiMsg.innerHTML = '✕ Error: ' + err.message;
       }
-
       editSend.disabled = false;
       editMessages.scrollTop = editMessages.scrollHeight;
     }
 
-    // ── Analyze ──
     analyzeBtn.addEventListener('click', analyze);
     mainInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) analyze(); });
 
     async function analyze() {
       const input = mainInput.value.trim();
-
-      if (!imageBase64 && !input) {
-        showStatus('⚠ Paste a URL, code, or upload an image first.', 'error');
-        return;
-      }
-
+      if (!imageBase64 && !input) { showStatus('⚠ Paste a URL, code, or upload an image first.', 'error'); return; }
       analyzeBtn.disabled = true;
       detectedUrlEl.classList.remove('visible');
-
-      if (!imageBase64 && input && !input.startsWith('http')) {
-        displayCode(input);
-        analyzeBtn.disabled = false;
-        return;
-      }
-
+      if (!imageBase64 && input && !input.startsWith('http')) { displayCode(input); analyzeBtn.disabled = false; return; }
       if (!imageBase64 && input.startsWith('http')) {
         showStatus('<span class="spinner"></span> Fetching source code...', 'info');
         try {
-          const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'url', url: input })
-          });
+          const res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'url', url: input }) });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
           displayCode(data.code);
-        } catch (err) {
-          showStatus('✕ ' + err.message, 'error');
-        }
+        } catch (err) { showStatus('✕ ' + err.message, 'error'); }
         analyzeBtn.disabled = false;
         return;
       }
-
       if (imageBase64) {
         showStatus('<span class="spinner"></span> Analyzing with Gemini Vision...', 'info');
         try {
-          const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'image',
-              imageBase64,
-              url: input.startsWith('http') ? input : null
-            })
-          });
+          const res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'image', imageBase64, url: input.startsWith('http') ? input : null }) });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
           displayCode(data.code, data.detectedUrl);
-        } catch (err) {
-          showStatus('✕ ' + err.message, 'error');
-        }
+        } catch (err) { showStatus('✕ ' + err.message, 'error'); }
         analyzeBtn.disabled = false;
         return;
       }
-
       analyzeBtn.disabled = false;
     }
 
-    // ── Copy ──
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(currentCode);
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
     });
 
-    // ── Download ──
     downloadBtn.addEventListener('click', () => {
       const blob = new Blob([currentCode], { type: 'text/html' });
       const a = document.createElement('a');
