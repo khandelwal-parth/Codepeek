@@ -18,9 +18,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ code });
     }
 
-    // ── CASE 2: URL only → fetch directly (server has no CORS issues) ──
+    // ── CASE 2: URL only → fetch + inline all CSS & JS ──
     if (type === 'url') {
       let sourceCode = null;
+
       try {
         const r = await fetch(url, {
           signal: AbortSignal.timeout(10000),
@@ -44,6 +45,63 @@ export default async function handler(req, res) {
       }
 
       if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });
+
+      // ── Inline external CSS ──
+      const cssLinks = [...sourceCode.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi)];
+      for (const match of cssLinks) {
+        const href = match[1];
+        if (!href) continue;
+        try {
+          const fullUrl = href.startsWith('http') ? href : new URL(href, url).href;
+          const r = await fetch(fullUrl, { signal: AbortSignal.timeout(5000) });
+          if (r.ok) {
+            const cssText = await r.text();
+            sourceCode = sourceCode.replace(match[0], `<style>${cssText}</style>`);
+          }
+        } catch {}
+      }
+
+      // Also catch <link href="..." rel="stylesheet"> (reversed attr order)
+      const cssLinks2 = [...sourceCode.matchAll(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["']stylesheet["'][^>]*>/gi)];
+      for (const match of cssLinks2) {
+        const href = match[1];
+        if (!href) continue;
+        try {
+          const fullUrl = href.startsWith('http') ? href : new URL(href, url).href;
+          const r = await fetch(fullUrl, { signal: AbortSignal.timeout(5000) });
+          if (r.ok) {
+            const cssText = await r.text();
+            sourceCode = sourceCode.replace(match[0], `<style>${cssText}</style>`);
+          }
+        } catch {}
+      }
+
+      // ── Inline external JS (non-module, non-analytics) ──
+      const scriptTags = [...sourceCode.matchAll(/<script[^>]+src=["']([^"']+)["'][^>]*><\/script>/gi)];
+      for (const match of scriptTags) {
+        const src = match[1];
+        if (!src) continue;
+        // Skip analytics, tracking, ads
+        if (/google|gtag|analytics|facebook|twitter|ads|recaptcha/i.test(src)) continue;
+        try {
+          const fullUrl = src.startsWith('http') ? src : new URL(src, url).href;
+          const r = await fetch(fullUrl, { signal: AbortSignal.timeout(5000) });
+          if (r.ok) {
+            const jsText = await r.text();
+            sourceCode = sourceCode.replace(match[0], `<script>${jsText}</script>`);
+          }
+        } catch {}
+      }
+
+      // ── Fix relative image/asset paths to absolute ──
+      sourceCode = sourceCode
+        .replace(/src=["'](?!http|data|\/\/)(.*?)["']/gi, (m, p) => {
+          try { return `src="${new URL(p, url).href}"`; } catch { return m; }
+        })
+        .replace(/url\(['"]?(?!http|data|\/\/)(.*?)['"]?\)/gi, (m, p) => {
+          try { return `url("${new URL(p, url).href}")`; } catch { return m; }
+        });
+
       return res.status(200).json({ code: sourceCode });
     }
 
