@@ -5,14 +5,6 @@ function cleanHTML(html, baseUrl) {
     html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${base}">`);
   } catch {}
 
-  // Keep scripts with src, only remove minified inline scripts
-  html = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, content) => {
-    if (/\bsrc\s*=/i.test(attrs)) return match;
-    const lines = content.split('\n');
-    const isMinified = lines.some(line => line.trim().length > 500);
-    return isMinified ? '<!-- script removed (minified) -->' : match;
-  });
-
   return html;
 }
 
