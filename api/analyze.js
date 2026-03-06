@@ -1,5 +1,43 @@
+// ── Clean fetched HTML ──
+function cleanHTML(html, baseUrl) {
+  // Inject <base> tag so relative URLs (images, CSS) load from original domain
+  const origin = new URL(baseUrl).origin;
+  html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${origin}/">`);
+
+  // Remove <script> tags with minified content (single line longer than 500 chars)
+  html = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (match, content) => {
+    const lines = content.split('\n');
+    const isMinified = lines.some(line => line.trim().length > 500);
+    return isMinified ? '<!-- script removed (minified) -->' : match;
+  });
+
+  // Remove inline event handlers with long minified values
+  html = html.replace(/\s(on\w+)="[^"]{200,}"/gi, '');
+
+  return html;
+}
+
+// ── In-memory rate limiter (10 requests per minute per IP) ──
+const rateLimitMap = new Map();
+const RATE_LIMIT = 10;
+const RATE_WINDOW = 60 * 1000; // 1 minute
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip) || { count: 0, start: now };
+
+  if (now - entry.start > RATE_WINDOW) {
+    entry.count = 1;
+    entry.start = now;
+  } else {
+    entry.count++;
+  }
+
+  rateLimitMap.set(ip, entry);
+  return entry.count <= RATE_LIMIT;
+}
+
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -7,8 +45,17 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // ── Rate limiting ──
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
+  }
+
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'API key not configured on server' });
+
+  const MODEL = 'gemini-3-flash-preview';
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
   try {
     const { type, imageBase64, url, code } = req.body;
@@ -18,10 +65,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ code });
     }
 
-    // ── CASE 2: URL only → fetch + inline all CSS & JS ──
+    // ── CASE 2: URL only → fetch directly ──
     if (type === 'url') {
       let sourceCode = null;
-
       try {
         const r = await fetch(url, {
           signal: AbortSignal.timeout(10000),
@@ -33,7 +79,6 @@ export default async function handler(req, res) {
         if (r.ok) sourceCode = await r.text();
       } catch {}
 
-      // Fallback to proxy if direct fetch fails
       if (!sourceCode) {
         try {
           const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
@@ -46,62 +91,8 @@ export default async function handler(req, res) {
 
       if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });
 
-      // ── Inline external CSS ──
-      const cssLinks = [...sourceCode.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi)];
-      for (const match of cssLinks) {
-        const href = match[1];
-        if (!href) continue;
-        try {
-          const fullUrl = href.startsWith('http') ? href : new URL(href, url).href;
-          const r = await fetch(fullUrl, { signal: AbortSignal.timeout(5000) });
-          if (r.ok) {
-            const cssText = await r.text();
-            sourceCode = sourceCode.replace(match[0], `<style>${cssText}</style>`);
-          }
-        } catch {}
-      }
-
-      // Also catch <link href="..." rel="stylesheet"> (reversed attr order)
-      const cssLinks2 = [...sourceCode.matchAll(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["']stylesheet["'][^>]*>/gi)];
-      for (const match of cssLinks2) {
-        const href = match[1];
-        if (!href) continue;
-        try {
-          const fullUrl = href.startsWith('http') ? href : new URL(href, url).href;
-          const r = await fetch(fullUrl, { signal: AbortSignal.timeout(5000) });
-          if (r.ok) {
-            const cssText = await r.text();
-            sourceCode = sourceCode.replace(match[0], `<style>${cssText}</style>`);
-          }
-        } catch {}
-      }
-
-      // ── Inline external JS (non-module, non-analytics) ──
-      const scriptTags = [...sourceCode.matchAll(/<script[^>]+src=["']([^"']+)["'][^>]*><\/script>/gi)];
-      for (const match of scriptTags) {
-        const src = match[1];
-        if (!src) continue;
-        // Skip analytics, tracking, ads
-        if (/google|gtag|analytics|facebook|twitter|ads|recaptcha/i.test(src)) continue;
-        try {
-          const fullUrl = src.startsWith('http') ? src : new URL(src, url).href;
-          const r = await fetch(fullUrl, { signal: AbortSignal.timeout(5000) });
-          if (r.ok) {
-            const jsText = await r.text();
-            sourceCode = sourceCode.replace(match[0], `<script>${jsText}</script>`);
-          }
-        } catch {}
-      }
-
-      // ── Fix relative image/asset paths to absolute ──
-      sourceCode = sourceCode
-        .replace(/src=["'](?!http|data|\/\/)(.*?)["']/gi, (m, p) => {
-          try { return `src="${new URL(p, url).href}"`; } catch { return m; }
-        })
-        .replace(/url\(['"]?(?!http|data|\/\/)(.*?)['"]?\)/gi, (m, p) => {
-          try { return `url("${new URL(p, url).href}")`; } catch { return m; }
-        });
-
+      // Clean up minified JS and inject base tag
+      sourceCode = cleanHTML(sourceCode, url);
       return res.status(200).json({ code: sourceCode });
     }
 
@@ -110,23 +101,19 @@ export default async function handler(req, res) {
       let urlSourceCode = null;
       let resolvedUrl = url || null;
 
-      // Step 1: If no URL provided, ask Gemini to extract one from the image
       if (!resolvedUrl) {
-        const extractRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
-                  { text: 'Look at this screenshot. If you can see a URL, domain name, or website address anywhere in the image (in the browser address bar, in text, in a logo, anywhere), extract and return ONLY the full URL starting with https://. If you cannot find any URL, return exactly the word: NONE' }
-                ]
-              }]
-            })
-          }
-        );
+        const extractRes = await fetch(GEMINI_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
+                { text: 'Look at this screenshot. If you can see a URL, domain name, or website address anywhere in the image (in the browser address bar, in text, in a logo, anywhere), extract and return ONLY the full URL starting with https://. If you cannot find any URL, return exactly the word: NONE' }
+              ]
+            }]
+          })
+        });
         const extractData = await extractRes.json();
         const extracted = extractData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         if (extracted && extracted !== 'NONE' && extracted.startsWith('http')) {
@@ -134,7 +121,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // Step 2: If we have a URL (provided or extracted), fetch the source directly
       if (resolvedUrl) {
         try {
           const r = await fetch(resolvedUrl, {
@@ -148,10 +134,7 @@ export default async function handler(req, res) {
         } catch {}
       }
 
-      // Step 3: Build Gemini prompt with image + optional source code
-      const promptParts = [
-        { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
-      ];
+      const promptParts = [{ inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }];
 
       let textPrompt = `You are an expert UI-to-code engineer. Analyze this screenshot carefully.`;
       if (urlSourceCode) {
@@ -163,14 +146,11 @@ export default async function handler(req, res) {
 
       promptParts.push({ text: textPrompt });
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: promptParts }] })
-        }
-      );
+      const geminiRes = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: promptParts }] })
+      });
 
       const geminiData = await geminiRes.json();
       if (geminiData.error) return res.status(500).json({ error: geminiData.error.message });
@@ -184,20 +164,17 @@ export default async function handler(req, res) {
     // ── CASE 4: AI Edit ──
     if (type === 'edit') {
       const { currentCode, instruction } = req.body;
-      const editRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are an expert frontend developer. Here is the current HTML/CSS/JS code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nThe user wants to make this change: "${instruction}"\n\nReturn the complete updated HTML code with the changes applied. Return ONLY the complete HTML, no explanation, no markdown code blocks.`
-              }]
+      const editRes = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are an expert frontend developer. Here is the current HTML/CSS/JS code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nThe user wants to make this change: "${instruction}"\n\nReturn the complete updated HTML code with the changes applied. Return ONLY the complete HTML, no explanation, no markdown code blocks.`
             }]
-          })
-        }
-      );
+          }]
+        })
+      });
       const editData = await editRes.json();
       if (editData.error) return res.status(500).json({ error: editData.error.message });
       let editedCode = editData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
