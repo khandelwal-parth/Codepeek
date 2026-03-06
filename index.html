@@ -34,7 +34,6 @@
       overflow-x: hidden;
     }
 
-    /* Subtle warm texture blobs */
     body::before {
       content: '';
       position: fixed;
@@ -56,7 +55,6 @@
 
     .app { position: relative; z-index: 1; }
 
-    /* ── Nav ── */
     nav {
       display: flex;
       align-items: center;
@@ -99,7 +97,6 @@
     }
     .nav-links a:hover { color: var(--orange); }
 
-    /* ── Hero ── */
     .hero {
       text-align: center;
       padding: 72px 20px 48px;
@@ -153,7 +150,6 @@
       font-weight: 400;
     }
 
-    /* ── Main card ── */
     .input-card {
       max-width: 820px;
       margin: 0 auto;
@@ -226,7 +222,6 @@
     }
     .detected-url.visible { display: flex; }
 
-    /* Bottom toolbar of card */
     .input-toolbar {
       display: flex;
       align-items: center;
@@ -303,7 +298,6 @@
       color: var(--muted);
     }
 
-    /* ── Status ── */
     .status-bar { max-width: 820px; margin: 16px auto 0; padding: 0 24px; display: none; }
     .status-bar.visible { display: block; }
     .status-msg {
@@ -319,7 +313,6 @@
     .status-msg.info  { border-color: var(--orange); color: var(--orange2); background: rgba(232,77,28,0.04); }
     .status-msg.success { border-color: var(--success); color: var(--success); background: rgba(42,125,79,0.04); }
 
-    /* ── Results ── */
     .results { margin: 28px 0 0; padding: 0 24px 48px; display: none; }
     .results.visible { display: block; }
 
@@ -371,7 +364,6 @@
     }
     .edit-btn:hover { background: rgba(107,63,160,0.12); }
 
-    /* ── Workspace ── */
     .workspace {
       display: flex;
       gap: 14px;
@@ -380,7 +372,6 @@
       align-items: stretch;
     }
 
-    /* Left column: code panel + editor stacked */
     .left-col {
       width: 340px;
       flex-shrink: 0;
@@ -455,7 +446,6 @@
       color: var(--brown2);
     }
 
-    /* ── Right side — just the preview, full height always ── */
     .right-side {
       flex: 1;
       min-width: 0;
@@ -505,9 +495,9 @@
     }
     .browser-close:hover { color: var(--orange); }
 
+    /* ── No sandbox on iframe so external resources load freely ── */
     .preview-frame { flex: 1; border: none; background: white; width: 100%; }
 
-    /* ── Edit panel — sits below code panel in left col ── */
     .edit-panel {
       height: 220px;
       flex-shrink: 0;
@@ -592,7 +582,6 @@
     .edit-send:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--brown); }
     .edit-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-    /* ── Spinner ── */
     .spinner {
       display: inline-block; width: 12px; height: 12px;
       border: 2px solid rgba(232,77,28,0.2);
@@ -603,7 +592,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Toast ── */
     .toast {
       position: fixed; bottom: 24px; right: 24px;
       background: var(--surface);
@@ -633,7 +621,6 @@
 </head>
 <body>
   <div class="app">
-    <!-- Nav -->
     <nav>
       <div class="nav-logo">
         <span class="nav-logo-icon">&lt;/&gt;</span>
@@ -645,14 +632,12 @@
       </ul>
     </nav>
 
-    <!-- Hero -->
     <div class="hero">
       <div class="badge"><span class="badge-dot"></span> Code Inspector</div>
       <h1 class="logo">Code<em>Peek</em></h1>
       <p class="subtitle">Paste a URL, drop a code file, or paste code content — get thorough analysis instantly.</p>
     </div>
 
-    <!-- Input -->
     <div class="input-card">
       <div class="input-box">
         <div class="input-main-area">
@@ -686,12 +671,10 @@
       <p class="free-note">No credit card required &bull; Free tier available</p>
     </div>
 
-    <!-- Status -->
     <div class="status-bar" id="statusBar">
       <div class="status-msg" id="statusMsg"></div>
     </div>
 
-    <!-- Results -->
     <div class="results" id="results">
       <div class="results-topbar">
         <div class="stats" id="stats"></div>
@@ -704,8 +687,6 @@
       </div>
 
       <div class="workspace" id="workspace">
-
-        <!-- Left column: code panel always, editor below when open -->
         <div class="left-col full-width" id="leftCol">
           <div class="code-panel" id="codePanel">
             <div class="panel-header">
@@ -720,7 +701,6 @@
             </div>
           </div>
 
-          <!-- Editor sits below code panel, left col only -->
           <div class="edit-panel" id="editPanel" style="display:none">
             <div class="panel-header">
               <div class="panel-title">
@@ -739,7 +719,6 @@
           </div>
         </div>
 
-        <!-- Right side: preview only, full height, never resizes -->
         <div class="right-side" id="rightSide" style="display:none">
           <div class="preview-panel" id="previewPanel">
             <div class="browser-bar">
@@ -751,15 +730,14 @@
               <div class="browser-url">preview — codepeek live render</div>
               <button class="browser-close" id="closePreview">✕ close</button>
             </div>
-            <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            <!-- No sandbox: allows external images, CSS, JS to load freely -->
+            <iframe class="preview-frame" id="previewFrame"></iframe>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- Features Section -->
   <section id="features" style="max-width:820px;margin:80px auto 0;padding:0 24px 80px;">
     <div style="text-align:center;margin-bottom:48px;">
       <div class="badge"><span class="badge-dot"></span> Features</div>
@@ -786,7 +764,6 @@
         <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">Live Preview</div>
         <div style="color:var(--muted);font-size:0.82rem;line-height:1.6;">See your fetched or edited code render in real time inside a built-in browser preview panel.</div>
       </div>
-
       <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:24px;box-shadow:4px 4px 0 var(--border2);grid-column:span 3;">
         <div style="font-size:1.6rem;margin-bottom:12px;">⬇️</div>
         <div style="font-weight:600;color:var(--brown);margin-bottom:8px;font-size:0.95rem;">Copy &amp; Download</div>
@@ -795,7 +772,6 @@
     </div>
   </section>
 
-  <!-- Documentation Section -->
   <section id="docs" style="max-width:820px;margin:0 auto;padding:0 24px 100px;">
     <div style="text-align:center;margin-bottom:48px;">
       <div class="badge"><span class="badge-dot"></span> Documentation</div>
@@ -830,12 +806,9 @@
   <input type="file" id="fileInput" accept="image/*" style="display:none" />
 
   <script>
-    // Smooth scroll with ripple effect on nav links
     function scrollToSection(id, e) {
       e.preventDefault();
       const link = e.target;
-
-      // Ripple animation on the link
       link.style.transition = 'none';
       link.style.color = 'var(--orange)';
       link.style.transform = 'scale(0.92)';
@@ -844,14 +817,11 @@
         link.style.transform = 'scale(1)';
       }, 120);
       setTimeout(() => { link.style.color = ''; }, 600);
-
       const target = document.getElementById(id);
       if (!target) return;
       const offset = 80;
       const top = target.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
-
-      // Flash highlight on the section
       target.style.transition = 'none';
       target.style.outline = '2px solid rgba(232,77,28,0.4)';
       target.style.borderRadius = '12px';
@@ -886,10 +856,8 @@
     const downloadBtn = $('downloadBtn');
     const previewToggleBtn = $('previewToggleBtn');
     const editToggleBtn = $('editToggleBtn');
-    const codePanel = $('codePanel');
     const leftCol = $('leftCol');
     const rightSide = $('rightSide');
-    const previewPanel = $('previewPanel');
     const previewFrame = $('previewFrame');
     const editPanel = $('editPanel');
     const closePreview = $('closePreview');
@@ -918,7 +886,6 @@
       reader.readAsDataURL(file);
     });
 
-    // Ctrl+V paste image directly into textarea
     mainInput.addEventListener('paste', e => {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
       for (const item of items) {
@@ -1003,7 +970,6 @@
     }
 
     function updateLayout() {
-      // Right side shows only when preview is open
       if (showPreview) {
         rightSide.style.display = 'flex';
         leftCol.classList.remove('full-width');
@@ -1011,15 +977,13 @@
         rightSide.style.display = 'none';
         leftCol.classList.add('full-width');
       }
-      // Editor opens below code panel in left col — never affects preview
       editPanel.style.display = showEdit ? 'flex' : 'none';
     }
 
     function updatePreview() {
-      const oldUrl = previewFrame.src;
-      if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
-      const blob = new Blob([currentCode], { type: 'text/html' });
-      previewFrame.src = URL.createObjectURL(blob);
+      // Use srcdoc so the iframe renders inline without a blob null-origin
+      // This allows external images, CSS, and JS from the original site to load
+      previewFrame.srcdoc = currentCode;
     }
 
     previewToggleBtn.addEventListener('click', () => {
@@ -1133,14 +1097,13 @@
       a.click();
     });
   </script>
-  <!-- About Author -->
+
   <div style="text-align:center;padding:40px 24px 60px;">
     <button onclick="var m=document.getElementById('authorModal');m.style.display=m.style.display==='flex'?'none':'flex';" style="background:transparent;border:1.5px solid var(--border2);border-radius:8px;padding:8px 20px;font-family:'DM Sans',sans-serif;font-size:0.82rem;color:var(--muted);cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
       About the Author
     </button>
   </div>
 
-  <!-- Author Modal (inline, no new tab) -->
   <div id="authorModal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(45,26,14,0.4);backdrop-filter:blur(4px);" onclick="if(event.target===this)this.classList.remove('open')">
     <div style="background:var(--surface);border:2px solid var(--border2);border-radius:16px;padding:36px 40px;max-width:360px;width:90%;text-align:center;box-shadow:8px 8px 0 var(--border2);position:relative;animation:popIn 0.25s ease;">
       <button onclick="document.getElementById('authorModal').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;line-height:1;">✕</button>
