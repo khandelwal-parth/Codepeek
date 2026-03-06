@@ -1,17 +1,13 @@
 // ── Clean fetched HTML ──
 function cleanHTML(html, baseUrl) {
   try {
-    const origin = new URL(baseUrl).origin;
-    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${origin}/">`);
+    const base = baseUrl.endsWith('/') ? baseUrl : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${base}">`);
   } catch {}
 
-  // Remove only inline scripts that are minified AND have no src attribute
-  // (external scripts with src="" are fine — keep them)
+  // Keep scripts with src, only remove minified inline scripts
   html = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, content) => {
-    // If it has a src attribute, always keep it
     if (/\bsrc\s*=/i.test(attrs)) return match;
-
-    // Remove inline scripts with minified content (long single lines)
     const lines = content.split('\n');
     const isMinified = lines.some(line => line.trim().length > 500);
     return isMinified ? '<!-- script removed (minified) -->' : match;
@@ -49,7 +45,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Rate limiting
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'unknown';
   if (!checkRateLimit(ip)) {
     return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
@@ -86,7 +81,7 @@ export default async function handler(req, res) {
         }
       } catch {}
 
-      // Fallback to direct fetch if Puppeteer fails (cold start / timeout)
+      // Fallback to direct fetch
       if (!sourceCode) {
         try {
           const r = await fetch(url, {
@@ -122,7 +117,6 @@ export default async function handler(req, res) {
       let urlSourceCode = null;
       let resolvedUrl = url || null;
 
-      // Extract URL from image if not provided
       if (!resolvedUrl) {
         const extractRes = await fetch(GEMINI_URL, {
           method: 'POST',
@@ -143,7 +137,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // Fetch source using Puppeteer if URL available
       if (resolvedUrl) {
         try {
           const r = await fetch(`${RENDERER_URL}/render`, {
@@ -158,14 +151,11 @@ export default async function handler(req, res) {
           }
         } catch {}
 
-        // Fallback to direct fetch
         if (!urlSourceCode) {
           try {
             const r = await fetch(resolvedUrl, {
               signal: AbortSignal.timeout(10000),
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              }
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
             });
             if (r.ok) urlSourceCode = await r.text();
           } catch {}
