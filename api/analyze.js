@@ -1,9 +1,21 @@
+const PROXY = 'https://codepeek-renderer.onrender.com/proxy?url=';
+
 // ── Clean fetched HTML ──
 function cleanHTML(html, baseUrl) {
   try {
     const base = baseUrl.endsWith('/') ? baseUrl : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
     html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${base}">`);
   } catch {}
+
+  // Proxy external stylesheets through renderer so CORS is bypassed
+  // handles: <link rel="stylesheet" href="..."> in both attribute orders
+  html = html.replace(/<link([^>]*?)>/gi, (match, attrs) => {
+    if (!/rel=["']stylesheet["']/i.test(attrs)) return match;
+    return match.replace(/(href=["'])([^"']+)(["'])/i, (m, pre, href, post) => {
+      if (!href.startsWith('http')) return m;
+      return `${pre}${PROXY}${encodeURIComponent(href)}${post}`;
+    });
+  });
 
   return html;
 }
@@ -59,7 +71,6 @@ export default async function handler(req, res) {
     if (type === 'url') {
       let sourceCode = null;
 
-      // Try Puppeteer renderer first (fully rendered page)
       try {
         const r = await fetch(`${RENDERER_URL}/render`, {
           method: 'POST',
@@ -73,7 +84,6 @@ export default async function handler(req, res) {
         }
       } catch {}
 
-      // Fallback to direct fetch
       if (!sourceCode) {
         try {
           const r = await fetch(url, {
@@ -87,7 +97,6 @@ export default async function handler(req, res) {
         } catch {}
       }
 
-      // Fallback to proxy
       if (!sourceCode) {
         try {
           const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
