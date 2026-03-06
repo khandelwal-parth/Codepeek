@@ -4,7 +4,15 @@ const PROXY = 'https://codepeek-renderer.onrender.com/proxy?url=';
 function cleanHTML(html, baseUrl) {
   try {
     const base = baseUrl.endsWith('/') ? baseUrl : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
-    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${base}">`);
+    const hostname = new URL(baseUrl).hostname;
+    html = html.replace(/<head([^>]*)>/i, `<head$1>
+<base href="${base}">
+<script>
+  try {
+    Object.defineProperty(window.location, 'hostname', { value: '${hostname}', writable: false });
+    Object.defineProperty(window.location, 'protocol', { value: 'https:', writable: false });
+  } catch(e) {}
+</script>`);
   } catch {}
 
   // Proxy external stylesheets through renderer so CORS is bypassed
