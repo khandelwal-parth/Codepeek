@@ -1,18 +1,16 @@
 // ── Clean fetched HTML ──
 function cleanHTML(html, baseUrl) {
-  // Inject <base> tag so relative URLs (images, CSS) load from original domain
-  const origin = new URL(baseUrl).origin;
-  html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${origin}/">`);
+  try {
+    const origin = new URL(baseUrl).origin;
+    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${origin}/">`);
+  } catch {}
 
-  // Remove <script> tags with minified content (single line longer than 500 chars)
+  // Remove <script> tags with minified content
   html = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (match, content) => {
     const lines = content.split('\n');
     const isMinified = lines.some(line => line.trim().length > 500);
     return isMinified ? '<!-- script removed (minified) -->' : match;
   });
-
-  // Remove inline event handlers with long minified values
-  html = html.replace(/\s(on\w+)="[^"]{200,}"/gi, '');
 
   return html;
 }
@@ -20,22 +18,23 @@ function cleanHTML(html, baseUrl) {
 // ── In-memory rate limiter (10 requests per minute per IP) ──
 const rateLimitMap = new Map();
 const RATE_LIMIT = 10;
-const RATE_WINDOW = 60 * 1000; // 1 minute
+const RATE_WINDOW = 60 * 1000;
 
 function checkRateLimit(ip) {
   const now = Date.now();
   const entry = rateLimitMap.get(ip) || { count: 0, start: now };
-
   if (now - entry.start > RATE_WINDOW) {
     entry.count = 1;
     entry.start = now;
   } else {
     entry.count++;
   }
-
   rateLimitMap.set(ip, entry);
   return entry.count <= RATE_LIMIT;
 }
+
+const RENDERER_URL = 'https://codepeek-renderer.onrender.com';
+const MODEL = 'gemini-3-flash-preview';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,7 +44,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── Rate limiting ──
+  // Rate limiting
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'unknown';
   if (!checkRateLimit(ip)) {
     return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
@@ -54,31 +53,49 @@ export default async function handler(req, res) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'API key not configured on server' });
 
-  const MODEL = 'gemini-3-flash-preview';
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
   try {
     const { type, imageBase64, url, code } = req.body;
 
-    // ── CASE 1: Code paste → return as-is ──
+    // ── CASE 1: Code paste ──
     if (type === 'code') {
       return res.status(200).json({ code });
     }
 
-    // ── CASE 2: URL only → fetch directly ──
+    // ── CASE 2: URL → Puppeteer renderer ──
     if (type === 'url') {
       let sourceCode = null;
+
+      // Try Puppeteer renderer first (fully rendered page)
       try {
-        const r = await fetch(url, {
-          signal: AbortSignal.timeout(10000),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          }
+        const r = await fetch(`${RENDERER_URL}/render`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+          signal: AbortSignal.timeout(35000)
         });
-        if (r.ok) sourceCode = await r.text();
+        if (r.ok) {
+          const data = await r.json();
+          sourceCode = data.code || null;
+        }
       } catch {}
 
+      // Fallback to direct fetch if Puppeteer fails (cold start / timeout)
+      if (!sourceCode) {
+        try {
+          const r = await fetch(url, {
+            signal: AbortSignal.timeout(10000),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            }
+          });
+          if (r.ok) sourceCode = await r.text();
+        } catch {}
+      }
+
+      // Fallback to proxy
       if (!sourceCode) {
         try {
           const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
@@ -91,7 +108,6 @@ export default async function handler(req, res) {
 
       if (!sourceCode) return res.status(502).json({ error: 'Could not fetch URL. Try pasting the source code directly.' });
 
-      // Clean up minified JS and inject base tag
       sourceCode = cleanHTML(sourceCode, url);
       return res.status(200).json({ code: sourceCode });
     }
@@ -101,6 +117,7 @@ export default async function handler(req, res) {
       let urlSourceCode = null;
       let resolvedUrl = url || null;
 
+      // Extract URL from image if not provided
       if (!resolvedUrl) {
         const extractRes = await fetch(GEMINI_URL, {
           method: 'POST',
@@ -121,21 +138,36 @@ export default async function handler(req, res) {
         }
       }
 
+      // Fetch source using Puppeteer if URL available
       if (resolvedUrl) {
         try {
-          const r = await fetch(resolvedUrl, {
-            signal: AbortSignal.timeout(10000),
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            }
+          const r = await fetch(`${RENDERER_URL}/render`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: resolvedUrl }),
+            signal: AbortSignal.timeout(35000)
           });
-          if (r.ok) urlSourceCode = await r.text();
+          if (r.ok) {
+            const data = await r.json();
+            urlSourceCode = data.code || null;
+          }
         } catch {}
+
+        // Fallback to direct fetch
+        if (!urlSourceCode) {
+          try {
+            const r = await fetch(resolvedUrl, {
+              signal: AbortSignal.timeout(10000),
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              }
+            });
+            if (r.ok) urlSourceCode = await r.text();
+          } catch {}
+        }
       }
 
       const promptParts = [{ inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }];
-
       let textPrompt = `You are an expert UI-to-code engineer. Analyze this screenshot carefully.`;
       if (urlSourceCode) {
         textPrompt += `\n\nI also have the actual source code of this page:\n\`\`\`html\n${urlSourceCode.substring(0, 15000)}\n\`\`\`\n\nUse BOTH the screenshot AND the source code to recreate this UI as accurately as possible.`;
@@ -143,7 +175,6 @@ export default async function handler(req, res) {
         textPrompt += `\n\nThis screenshot is from: ${resolvedUrl}. Use the visual information to reconstruct the UI.`;
       }
       textPrompt += `\n\nGenerate clean, complete, production-ready HTML + CSS + JavaScript that recreates this UI as accurately as possible. Include all visible text, colors, fonts, layout, spacing, and interactive elements. Return ONLY the complete HTML code, nothing else, no explanation, no markdown code blocks.`;
-
       promptParts.push({ text: textPrompt });
 
       const geminiRes = await fetch(GEMINI_URL, {
