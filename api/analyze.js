@@ -7,9 +7,6 @@ function cleanHTML(html, baseUrl) {
     html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${base}">`);
   } catch {}
 
-  // Override Revolution Slider local filesystem detection
-  html = html.replace('</head>', `<script>window.location.protocol='https:';</script>\n</head>`);
-
   // Proxy external stylesheets through renderer so CORS is bypassed
   html = html.replace(/<link([^>]*?)>/gi, (match, attrs) => {
     if (!/rel=["']stylesheet["']/i.test(attrs)) return match;
