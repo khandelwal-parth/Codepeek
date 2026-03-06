@@ -4,30 +4,12 @@ const PROXY = 'https://codepeek-renderer.onrender.com/proxy?url=';
 function cleanHTML(html, baseUrl) {
   try {
     const base = baseUrl.endsWith('/') ? baseUrl : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
-    const hostname = new URL(baseUrl).hostname;
-    html = html.replace(/<head([^>]*)>/i, `<head$1>
-<base href="${base}">
-<script>
-  try {
-    Object.defineProperty(window.location, 'hostname', { value: '${hostname}', writable: false });
-    Object.defineProperty(window.location, 'protocol', { value: 'https:', writable: false });
-  } catch(e) {}
-</script>`);
+    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${base}">`);
   } catch {}
-
-  // Proxy external stylesheets through renderer so CORS is bypassed
-  html = html.replace(/<link([^>]*?)>/gi, (match, attrs) => {
-    if (!/rel=["']stylesheet["']/i.test(attrs)) return match;
-    return match.replace(/(href=["'])([^"']+)(["'])/i, (m, pre, href, post) => {
-      if (!href.startsWith('http')) return m;
-      return `${pre}${PROXY}${encodeURIComponent(href)}${post}`;
-    });
-  });
-
   return html;
 }
 
-// ── In-memory rate limiter (10 requests per minute per IP) ──
+// ── In-memory rate limiter ──
 const rateLimitMap = new Map();
 const RATE_LIMIT = 10;
 const RATE_WINDOW = 60 * 1000;
@@ -35,12 +17,8 @@ const RATE_WINDOW = 60 * 1000;
 function checkRateLimit(ip) {
   const now = Date.now();
   const entry = rateLimitMap.get(ip) || { count: 0, start: now };
-  if (now - entry.start > RATE_WINDOW) {
-    entry.count = 1;
-    entry.start = now;
-  } else {
-    entry.count++;
-  }
+  if (now - entry.start > RATE_WINDOW) { entry.count = 1; entry.start = now; }
+  else { entry.count++; }
   rateLimitMap.set(ip, entry);
   return entry.count <= RATE_LIMIT;
 }
@@ -57,9 +35,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'unknown';
-  if (!checkRateLimit(ip)) {
-    return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
-  }
+  if (!checkRateLimit(ip)) return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
 
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'API key not configured on server' });
@@ -70,11 +46,9 @@ export default async function handler(req, res) {
     const { type, imageBase64, url, code } = req.body;
 
     // ── CASE 1: Code paste ──
-    if (type === 'code') {
-      return res.status(200).json({ code });
-    }
+    if (type === 'code') return res.status(200).json({ code });
 
-    // ── CASE 2: URL → Puppeteer renderer ──
+    // ── CASE 2: URL → Puppeteer renderer (now inlines ALL assets) ──
     if (type === 'url') {
       let sourceCode = null;
 
@@ -83,7 +57,7 @@ export default async function handler(req, res) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url }),
-          signal: AbortSignal.timeout(35000)
+          signal: AbortSignal.timeout(60000) // longer timeout since we now inline assets
         });
         if (r.ok) {
           const data = await r.json();
@@ -91,6 +65,7 @@ export default async function handler(req, res) {
         }
       } catch {}
 
+      // Fallback to direct fetch
       if (!sourceCode) {
         try {
           const r = await fetch(url, {
@@ -104,6 +79,7 @@ export default async function handler(req, res) {
         } catch {}
       }
 
+      // Fallback to proxy
       if (!sourceCode) {
         try {
           const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
@@ -140,9 +116,7 @@ export default async function handler(req, res) {
         });
         const extractData = await extractRes.json();
         const extracted = extractData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (extracted && extracted !== 'NONE' && extracted.startsWith('http')) {
-          resolvedUrl = extracted;
-        }
+        if (extracted && extracted !== 'NONE' && extracted.startsWith('http')) resolvedUrl = extracted;
       }
 
       if (resolvedUrl) {
@@ -151,12 +125,9 @@ export default async function handler(req, res) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: resolvedUrl }),
-            signal: AbortSignal.timeout(35000)
+            signal: AbortSignal.timeout(60000)
           });
-          if (r.ok) {
-            const data = await r.json();
-            urlSourceCode = data.code || null;
-          }
+          if (r.ok) { const data = await r.json(); urlSourceCode = data.code || null; }
         } catch {}
 
         if (!urlSourceCode) {
