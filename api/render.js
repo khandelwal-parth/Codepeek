@@ -1,4 +1,4 @@
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 export const config = {
@@ -55,7 +55,9 @@ export default async function handler(req, res) {
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v123.0.0/chromium-v123.0.0-pack.tar"
+      ),
       headless: chromium.headless,
     });
 
