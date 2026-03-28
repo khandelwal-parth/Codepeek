@@ -1,4 +1,4 @@
-const PROXY = 'https://codepeek-renderer.onrender.com/proxy?url=';
+const PROXY = '/api/proxy?url=';
 
 // ── Clean fetched HTML ──
 function cleanHTML(html, baseUrl) {
@@ -23,8 +23,7 @@ function checkRateLimit(ip) {
   return entry.count <= RATE_LIMIT;
 }
 
-const RENDERER_URL = 'https://codepeek-renderer.onrender.com';
-const MODEL = 'gemini-3-flash-preview';
+const MODEL = 'gemini-2.0-flash';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -48,20 +47,17 @@ export default async function handler(req, res) {
     // ── CASE 1: Code paste ──
     if (type === 'code') return res.status(200).json({ code });
 
-    // ── CASE 2: URL → Puppeteer renderer (now inlines ALL assets) ──
+    // ── CASE 2: URL → Puppeteer renderer (Vercel, no cold starts) ──
     if (type === 'url') {
       let sourceCode = null;
 
       try {
-        const r = await fetch(`${RENDERER_URL}/render`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-          signal: AbortSignal.timeout(60000) // longer timeout since we now inline assets
+        const r = await fetch(`/api/render?url=${encodeURIComponent(url)}`, {
+          signal: AbortSignal.timeout(55000)
         });
         if (r.ok) {
           const data = await r.json();
-          sourceCode = data.code || null;
+          sourceCode = data.html || null;
         }
       } catch {}
 
@@ -121,13 +117,10 @@ export default async function handler(req, res) {
 
       if (resolvedUrl) {
         try {
-          const r = await fetch(`${RENDERER_URL}/render`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: resolvedUrl }),
-            signal: AbortSignal.timeout(60000)
+          const r = await fetch(`/api/render?url=${encodeURIComponent(resolvedUrl)}`, {
+            signal: AbortSignal.timeout(55000)
           });
-          if (r.ok) { const data = await r.json(); urlSourceCode = data.code || null; }
+          if (r.ok) { const data = await r.json(); urlSourceCode = data.html || null; }
         } catch {}
 
         if (!urlSourceCode) {
