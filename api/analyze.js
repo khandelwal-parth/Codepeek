@@ -23,7 +23,7 @@ function checkRateLimit(ip) {
   return entry.count <= RATE_LIMIT;
 }
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-3.1-flash-lite-preview';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
