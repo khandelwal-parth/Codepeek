@@ -26,4 +26,4 @@ A fast, AI-powered code inspector. Paste a URL, drop some code, or upload a scre
 ---
 
 
-Built for fun. Made with way too many late nights. 🌙
+Built for fun. Made with way too many late nights.🌙
