@@ -5,43 +5,6 @@ export const config = {
   maxDuration: 60,
 };
 
-const REV_SLIDER_EXTENSIONS = [
-  "revolution.extension.slideanims.min.js",
-  "revolution.extension.actions.min.js",
-  "revolution.extension.layeranimation.min.js",
-  "revolution.extension.kenburn.min.js",
-  "revolution.extension.navigation.min.js",
-];
-
-function injectRevSliderFix(html, siteUrl) {
-  try {
-    const origin = new URL(siteUrl).origin;
-
-    // Check if this page uses RevSlider
-    if (!html.includes("revslider") && !html.includes("revolution")) return html;
-
-    // Find the RevSlider plugin base path from the existing HTML
-    const pluginPathMatch = html.match(/["'](https?:\/\/[^"']+\/revslider\/public\/assets\/js\/)/);
-    const pluginBase = pluginPathMatch
-      ? pluginPathMatch[1]
-      : `${origin}/wp-content/plugins/revslider/public/assets/js/`;
-
-    const extensionScripts = REV_SLIDER_EXTENSIONS.map(
-      (ext) => `<script type="text/javascript" src="${pluginBase}extensions/${ext}"></script>`
-    ).join("\n");
-
-    // Inject before </head>
-    if (html.includes("</head>")) {
-      return html.replace("</head>", `${extensionScripts}\n</head>`);
-    }
-
-    // Fallback: inject after <head>
-    return html.replace(/<head([^>]*)>/i, `<head$1>\n${extensionScripts}`);
-  } catch {
-    return html;
-  }
-}
-
 export default async function handler(req, res) {
   const { url } = req.query;
 
@@ -54,7 +17,7 @@ export default async function handler(req, res) {
   try {
     browser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
+      defaultViewport: { width: 1440, height: 900 },
       executablePath: await chromium.executablePath(
         "https://github.com/Sparticuz/chromium/releases/download/v123.0.0/chromium-v123.0.0-pack.tar"
       ),
@@ -63,14 +26,13 @@ export default async function handler(req, res) {
 
     const page = await browser.newPage();
 
-    // Block heavy assets to stay within timeout budget
+    // 1. Block heavy video media to save server execution time
     await page.setRequestInterception(true);
-    page.on("request", (interceptedReq) => {
-      const type = interceptedReq.resourceType();
-      if (["image", "media", "font"].includes(type)) {
-        interceptedReq.abort();
+    page.on("request", (req) => {
+      if (req.resourceType() === "media") {
+        req.abort();
       } else {
-        interceptedReq.continue();
+        req.continue();
       }
     });
 
@@ -79,18 +41,84 @@ export default async function handler(req, res) {
       timeout: 45000,
     });
 
-    // Extra wait for JS-heavy sites
-    await new Promise((r) => setTimeout(r, 2000));
+    // 2. Trigger Scroll Hydration (GSAP / Framer Motion / Lazy Loading)
+    await page.evaluate(async () => {
+      await new Promise((resolve) => {
+        let totalHeight = 0;
+        const distance = 400;
+        const timer = setInterval(() => {
+          const scrollHeight = document.body.scrollHeight;
+          window.scrollBy(0, distance);
+          totalHeight += distance;
+
+          if (totalHeight >= scrollHeight) {
+            clearInterval(timer);
+            window.scrollTo(0, 0);
+            resolve();
+          }
+        }, 60);
+      });
+    });
+
+    await new Promise((r) => setTimeout(r, 1000));
+
+    // 3. Freeze WebGL / Canvas / Map Components into Static Images
+    await page.evaluate(() => {
+      // Find canvas/map elements that fail on cross-domain
+      const canvases = document.querySelectorAll("canvas");
+      canvases.forEach((canvas) => {
+        try {
+          const dataUrl = canvas.toDataURL("image/png");
+          const img = document.createElement("img");
+          img.src = dataUrl;
+          img.style.cssText = canvas.style.cssText;
+          img.className = canvas.className;
+          canvas.parentNode.replaceChild(img, canvas);
+        } catch (e) {
+          console.warn("Canvas export failed due to CORS pollution", e);
+        }
+      });
+
+      // Strip blocking third-party iframes to prevent "refused to connect" errors
+      const iframes = document.querySelectorAll("iframe");
+      iframes.forEach((iframe) => {
+        const placeholder = document.createElement("div");
+        placeholder.style.cssText =
+          "padding: 24px; background: #f8f9fa; border: 1px dashed #ced4da; text-align: center; color: #6c757d; font-family: sans-serif; font-size: 13px; border-radius: 6px;";
+        placeholder.innerHTML = `<strong>Embedded Frame Removed</strong><br><span style="font-size:11px;">(${iframe.src || 'External Content'})</span>`;
+        if (iframe.parentNode) {
+          iframe.parentNode.replaceChild(placeholder, iframe);
+        }
+      });
+    });
+
+    // 4. Inlining CSS stylesheets directly into <style> blocks
+    await page.evaluate(async () => {
+      const cssLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      for (const link of cssLinks) {
+        try {
+          const response = await fetch(link.href);
+          if (response.ok) {
+            const cssText = await response.text();
+            const styleEl = document.createElement("style");
+            styleEl.textContent = cssText;
+            if (link.parentNode) {
+              link.parentNode.replaceChild(styleEl, link);
+            }
+          }
+        } catch (e) {
+          // Fallback to absolute remote link if CORS blocks direct CSS text fetch
+          link.href = new URL(link.getAttribute("href"), document.baseURI).href;
+        }
+      }
+    });
 
     let html = await page.content();
 
-    // Inject base href so srcdoc resolves relative URLs correctly
+    // Ensure image paths & relative URLs point directly to full HTTPS targets
     if (!html.includes("<base")) {
       html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${url}">`);
     }
-
-    // Inject RevSlider extensions if needed
-    html = injectRevSliderFix(html, url);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({ html });
